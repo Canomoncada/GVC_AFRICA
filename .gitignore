@@ -1,0 +1,19 @@
+# Ignore raw data, outputs, logs, and R session files
+
+# Raw data directory
+Data/
+
+# Output files
+exports/
+logs/
+
+# RStudio and R session files
+.Rhistory
+.RData
+.Rproj.user/
+.Ruserdata
+*.Rproj
+
+# OS-specific
+.DS_Store
+Thumbs.db
