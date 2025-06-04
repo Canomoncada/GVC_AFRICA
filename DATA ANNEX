@@ -494,3 +494,1163 @@ cat("Publication-ready Excel files with perfect formatting and footnotes.\n")
 cat("Both 227 and 138 countries versions created with China included.\n")
 cat("Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-04 14:31:18\n")
 cat("Current User's Login: Canomoncada\n")
+
+
+
+
+
+###########
+#version 2 
+
+
+#' ================================================================
+#' GVC WTO DEVELOPMENT REPORT 2025 - DATA ANNEX WITH COMPLETE ASEAN
+#' ================================================================
+#' 
+#' @title Set Up and Harmonization of Raw Data and Calculation of Core Pillars
+#' @description Complete data processing pipeline for Global Value Chain readiness indicators
+#'              including Technology, Trade & Investment, Sustainability, and Institutional pillars
+#' 
+#' @author Anthony S Cano Moncada
+#' @email ac4479a@american.edu
+#' @date Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-04 15:35:55
+#' @login Current User's Login: Canomoncada
+#' 
+#' @report GVC WTO Development Report 2025 June 4
+#' @version Final Annex Export - Core Pillars Analysis with Complete ASEAN Integration
+#' 
+#' @purpose This function performs comprehensive data harmonization and calculation
+#'          of normalized indices for Global Value Chain readiness assessment across
+#'          227 countries with focused analysis on 138 countries with substantial data
+#' 
+#' @organization Function Organization:
+#' 1. SETUP & LIBRARIES
+#'    - Required packages: tidyverse, readxl, haven, openxlsx
+#'    - Path configuration and environment setup
+#' 2. EXPORT FUNCTION DEFINITION
+#'    - Excel formatting with 2-row headers
+#'    - Professional styling and merged cells
+#'    - Frozen panes and footnote attribution
+#'    - Border styling and column sizing
+#' 3. DATA HARMONIZATION
+#'    - Master country list (227 countries)
+#'    - Regional classification (Africa, LAC, ASEAN, OECD, China, Other)
+#'    - COMPLETE ASEAN INTEGRATION: All 10 member countries guaranteed inclusion
+#'    - Country name harmonization mapping
+#'    - Min-max normalization function (0-1 scale)
+#' 4. INDICATOR PROCESSING (8 Sub-indicators)
+#'    - Technology Readiness: Internet Penetration Index (ITU), Mobile Connectivity Index (GSMA)
+#'    - Trade & Investment Readiness: Trade to GDP Ratio Index (World Bank), Logistics Performance Index (World Bank LPI)
+#'    - Sustainability Readiness: Modern Renewables Share Index (IRENA), CO2 Intensity Index (EDGAR, inverted)
+#'    - Institutional & Geopolitical Readiness: Business Ready Index (World Bank DB), Political Stability Index (WGI)
+#' 5. DATASET CREATION
+#'    - 227 Countries Dataset (complete master list)
+#'    - 138 Countries Dataset (substantial data availability)
+#'    - China prioritization (guaranteed inclusion)
+#'    - ASEAN prioritization (all 10 countries guaranteed inclusion)
+#'    - Data completeness scoring
+#' 6. EXPORT PROCESSING
+#'    - Excel files with perfect formatting
+#'    - CSV files for reference
+#'    - China-specific analysis
+#'    - ASEAN-specific analysis
+#'    - Summary documentation (JSON)
+#' 7. QUALITY ASSURANCE
+#'    - 3 decimal precision (sprintf "%.3f")
+#'    - N/A for missing values
+#'    - China inclusion verification
+#'    - ASEAN inclusion verification (all 10 countries)
+#'    - Regional distribution analysis
+#' 
+#' @methodology Core Pillars Methodology:
+#' - Technology Readiness: Average of Internet Penetration and Mobile Connectivity
+#' - Trade & Investment Readiness: Average of Trade to GDP Ratio and Logistics Performance
+#' - Sustainability Readiness: Combination of Modern Renewables and inverted CO2 Intensity
+#' - Institutional Readiness: Average of Business Environment and Political Stability
+#' 
+#' @data_sources
+#' - ITU: International Telecommunication Union (Internet usage statistics)
+#' - GSMA: GSM Association (Mobile connectivity index 2024)
+#' - World Bank: Trade statistics, LPI, and Doing Business indicators
+#' - IRENA: International Renewable Energy Agency (Modern renewables data)
+#' - EDGAR: Emissions Database for Global Atmospheric Research (CO2 intensity)
+#' - WGI: Worldwide Governance Indicators (Political stability)
+#' 
+#' @outputs
+#' 1. Core_Pillars_Annex_227_Final.xlsx - Complete country dataset with formatting
+#' 2. Core_Pillars_Annex_138_Final.xlsx - Substantial data subset with formatting  
+#' 3. Core_Pillars_Annex_227_Final.csv - Complete dataset reference file
+#' 4. Core_Pillars_Annex_138_Final.csv - Subset reference file
+#' 5. China_Analysis_227_Final.csv - China-specific indicator analysis
+#' 6. China_Analysis_138_Final.csv - China analysis for subset
+#' 7. ASEAN_Analysis_227_Final.csv - ASEAN-specific indicator analysis (NEW)
+#' 8. ASEAN_Analysis_138_Final.csv - ASEAN analysis for subset (NEW)
+#' 9. Final_Annex_Export_Summary.json - Complete process documentation
+#' 
+#' @note All indicators normalized to 0-1 scale using min-max normalization
+#'       Missing values represented as "N/A", precision set to 3 decimal places
+#'       Excel files include professional formatting with footnote attribution
+#'       ASEAN: All 10 member countries guaranteed inclusion in both datasets
+#' 
+#' ================================================================
+
+create_final_annex_export_complete <- function(data_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data/",
+                                               export_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex") {
+  
+  cat("================================================================\n")
+  cat("GVC WTO DEVELOPMENT REPORT 2025 - DATA ANNEX WITH COMPLETE ASEAN\n")
+  cat("================================================================\n")
+  cat("Author: Anthony S Cano Moncada (ac4479a@american.edu)\n")
+  cat("Report: GVC WTO Development Report 2025 June 4\n")
+  cat("Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-04 15:35:55\n")
+  cat("Current User's Login: Canomoncada\n")
+  cat("\nProcessing: Set Up and Harmonization of Raw Data and Calculation\n")
+  cat("Creating: 227 countries + 138 countries Core Pillars datasets\n")
+  cat("Format: Professional Excel export with footnotes and precision formatting\n")
+  cat("Methodology: Min-max normalization, 3 decimal precision, N/A for missing\n")
+  cat("ASEAN Integration: All 10 member countries guaranteed inclusion\n")
+  cat("================================================================\n\n")
+  
+  # Load required libraries
+  suppressPackageStartupMessages({
+    library(tidyverse)
+    library(readxl)
+    library(haven)
+    library(openxlsx)
+  })
+  
+  # ------------------ ASEAN COUNTRIES DEFINITION ------------------
+  
+  # Complete ASEAN member countries list (10 countries)
+  asean_countries <- c(
+    "Brunei",           # Brunei Darussalam
+    "Cambodia",         # Kingdom of Cambodia  
+    "Indonesia",        # Republic of Indonesia
+    "Laos",            # Lao People's Democratic Republic
+    "Malaysia",         # Malaysia
+    "Myanmar",          # Republic of the Union of Myanmar
+    "Philippines",      # Republic of the Philippines
+    "Singapore",        # Republic of Singapore
+    "Thailand",         # Kingdom of Thailand
+    "Vietnam"          # Socialist Republic of Vietnam
+  )
+  
+  message("ASEAN Countries Included (10 total):")
+  for(i in 1:length(asean_countries)) {
+    message(paste0("  ", i, ". ", asean_countries[i]))
+  }
+  message("")
+  
+  # ------------------ EXACT FORMAT EXPORT FUNCTION WITH FOOTNOTE ------------------
+  
+  export_annex_exact_format <- function(data, export_path = "Core_Pillars_Annex.xlsx") {
+    library(openxlsx)
+    
+    # Create workbook and worksheet
+    wb <- createWorkbook()
+    addWorksheet(wb, "Core Pillars")
+    
+    # Header Rows
+    row1 <- c("Core Pillars", "",
+              "Technology Readiness", "",
+              "Trade & Investment Readiness", "",
+              "Sustainability Readiness", "",
+              "Institutional & Geopolitical Readiness", "")
+    
+    row2 <- c("Countries", "Regions",
+              "Internet Penetration Index", "Mobile Connectivity Index",
+              "Trade to GDP Ratio Index", "Logistics Performance Index",
+              "Modern Renewables Share Index", "CO2 Intensity Index",
+              "Business Ready Index", "Political Stability Index")
+    
+    # Write headers
+    writeData(wb, "Core Pillars", t(row1), startRow = 1, startCol = 1, colNames = FALSE)
+    writeData(wb, "Core Pillars", t(row2), startRow = 2, startCol = 1, colNames = FALSE)
+    
+    # Write main data
+    writeData(wb, "Core Pillars", data, startRow = 3, startCol = 1, colNames = FALSE)
+    
+    # Styles
+    style_row1 <- createStyle(fontSize = 11, fontColour = "black", fgFill = "#D9E2F3",
+                              halign = "center", valign = "center", textDecoration = "bold", wrapText = TRUE)
+    style_row2 <- createStyle(fontSize = 10, fontColour = "white", fgFill = "#2F5597",
+                              halign = "center", valign = "center", textDecoration = "bold", wrapText = TRUE)
+    border_style <- createStyle(border = "TopBottomLeftRight", borderStyle = "thin")
+    footnote_style <- createStyle(fontSize = 9, fontColour = "#595959", valign = "top")
+    
+    # Apply styles
+    addStyle(wb, "Core Pillars", style_row1, rows = 1, cols = 1:10, gridExpand = TRUE)
+    addStyle(wb, "Core Pillars", style_row2, rows = 2, cols = 1:10, gridExpand = TRUE)
+    addStyle(wb, "Core Pillars", border_style, rows = 1:(nrow(data) + 2), cols = 1:10, gridExpand = TRUE)
+    
+    # Merge header cells
+    mergeCells(wb, "Core Pillars", cols = 1:2, rows = 1)  # Core Pillars
+    mergeCells(wb, "Core Pillars", cols = 3:4, rows = 1)  # Technology
+    mergeCells(wb, "Core Pillars", cols = 5:6, rows = 1)  # Trade & Investment
+    mergeCells(wb, "Core Pillars", cols = 7:8, rows = 1)  # Sustainability
+    mergeCells(wb, "Core Pillars", cols = 9:10, rows = 1) # Institutional
+    
+    # Row/Column Sizing
+    setRowHeights(wb, "Core Pillars", rows = 1:2, heights = c(30, 40))
+    setColWidths(wb, "Core Pillars", cols = 1:10, widths = "auto")
+    freezePane(wb, "Core Pillars", firstActiveRow = 3)
+    
+    # Add Footnote
+    footnote_row <- nrow(data) + 4
+    footnote_text <- "Source: Author's calculations using ITU, GSMA, World Bank, IRENA, and EDGAR."
+    writeData(wb, "Core Pillars", footnote_text, startRow = footnote_row, startCol = 1)
+    mergeCells(wb, "Core Pillars", cols = 1:10, rows = footnote_row)
+    addStyle(wb, "Core Pillars", footnote_style, rows = footnote_row, cols = 1, gridExpand = TRUE)
+    
+    # Save file
+    saveWorkbook(wb, export_path, overwrite = TRUE)
+    message("Exported with footnote to: ", export_path)
+  }
+  
+  # ------------------ DATA PREPARATION WITH ENHANCED ASEAN INTEGRATION ------------------
+  
+  message("Loading and processing all datasets...")
+  
+  # Load master countries
+  countries_world <- readr::read_csv(file.path(data_path, "countries of the world.csv"), show_col_types = FALSE)
+  
+  master_227_countries <- countries_world %>%
+    dplyr::select(Country, Region) %>%
+    dplyr::mutate(
+      Country = stringr::str_trim(Country),
+      Region = dplyr::case_when(
+        stringr::str_detect(stringr::str_to_upper(Country), "CHINA") ~ "CHINA",
+        stringr::str_detect(stringr::str_to_upper(Region), "AFRICA|NORTHERN AFRICA|EASTERN AFRICA|WESTERN AFRICA|MIDDLE AFRICA|SOUTHERN AFRICA") ~ "Africa",
+        stringr::str_detect(stringr::str_to_upper(Region), "LATIN|CARIBBEAN|CENTRAL AMERICA|SOUTH AMERICA") ~ "LAC",
+        # ENHANCED ASEAN INTEGRATION: More comprehensive matching
+        Country %in% asean_countries | 
+          stringr::str_detect(stringr::str_to_upper(Country), "BRUNEI|CAMBODIA|INDONESIA|LAOS|MALAYSIA|MYANMAR|PHILIPPINES|SINGAPORE|THAILAND|VIETNAM") |
+          stringr::str_detect(stringr::str_to_upper(Country), "BRUNEI DARUSSALAM|LAO PEOPLE") ~ "ASEAN",
+        Country %in% c("Australia", "Austria", "Belgium", "Canada", "Czech Republic", "Denmark", "Finland", "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Japan", "Korea, South", "Luxembourg", "Netherlands", "New Zealand", "Norway", "Poland", "Portugal", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "United Kingdom", "United States") ~ "OECD",
+        TRUE ~ "Other"
+      )
+    ) %>%
+    dplyr::distinct(Country, .keep_all = TRUE) %>%
+    dplyr::arrange(Country)
+  
+  message("Total countries in master list: ", nrow(master_227_countries))
+  
+  # ENHANCED: Harmonization function with ASEAN-specific mappings
+  harmonize_country_name <- function(country_name) {
+    harmonization_map <- c(
+      "United States" = "United States", "USA" = "United States", "US" = "United States",
+      "United Kingdom" = "United Kingdom", "UK" = "United Kingdom",
+      "China" = "China", "People's Republic of China" = "China",
+      "Russia" = "Russia", "Russian Federation" = "Russia",
+      "South Korea" = "Korea, South", "Korea, Rep." = "Korea, South",
+      "Czech Republic" = "Czech Republic", "Czechia" = "Czech Republic",
+      "Slovakia" = "Slovakia", "Slovak Republic" = "Slovakia",
+      "Myanmar" = "Myanmar", "Burma" = "Myanmar",
+      "Iran" = "Iran", "Iran, Islamic Rep." = "Iran",
+      "Egypt" = "Egypt", "Egypt, Arab Rep." = "Egypt",
+      "Venezuela" = "Venezuela", "Venezuela, RB" = "Venezuela",
+      "Congo, Dem. Rep." = "Congo, Dem. Rep.", "Democratic Republic of the Congo" = "Congo, Dem. Rep.",
+      "Congo, Rep." = "Congo, Republic", "Republic of the Congo" = "Congo, Republic",
+      # ASEAN-specific harmonization
+      "Brunei Darussalam" = "Brunei", "Brunei" = "Brunei",
+      "Cambodia" = "Cambodia", "Kingdom of Cambodia" = "Cambodia",
+      "Indonesia" = "Indonesia", "Republic of Indonesia" = "Indonesia",
+      "Lao PDR" = "Laos", "Lao People's Democratic Republic" = "Laos", "Laos" = "Laos",
+      "Malaysia" = "Malaysia",
+      "Myanmar" = "Myanmar", "Burma" = "Myanmar", "Republic of the Union of Myanmar" = "Myanmar",
+      "Philippines" = "Philippines", "Republic of the Philippines" = "Philippines",
+      "Singapore" = "Singapore", "Republic of Singapore" = "Singapore",
+      "Thailand" = "Thailand", "Kingdom of Thailand" = "Thailand",
+      "Vietnam" = "Vietnam", "Viet Nam" = "Vietnam", "Socialist Republic of Vietnam" = "Vietnam"
+    )
+    clean_name <- stringr::str_trim(as.character(country_name))
+    return(ifelse(clean_name %in% names(harmonization_map), harmonization_map[clean_name], clean_name))
+  }
+  
+  # Normalization function
+  normalize_minmax <- function(x) {
+    rng <- range(x, na.rm = TRUE)
+    return((x - rng[1]) / (rng[2] - rng[1]))
+  }
+  
+  # Process all datasets with 3 decimal precision
+  message("Processing all individual datasets with 3 decimal precision...")
+  
+  # Internet Penetration
+  internet_data <- readr::read_csv(file.path(data_path, "Individuals-using-the-internet.csv"), show_col_types = FALSE)
+  internet_processed <- internet_data %>%
+    dplyr::mutate(Country = map_chr(entityName, harmonize_country_name)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(dataValue, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Internet Penetration Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Internet Penetration Index`)
+  
+  # Mobile Connectivity
+  gsma_data <- readr::read_csv(file.path(data_path, "GSMA_Data_2024.csv"), show_col_types = FALSE)
+  mobile_processed <- gsma_data %>%
+    dplyr::mutate(Country = map_chr(Country, harmonize_country_name)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(Index, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Mobile Connectivity Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Mobile Connectivity Index`)
+  
+  # Trade to GDP
+  trade_data <- readr::read_csv(file.path(data_path, "Trade (_ of GDP).csv"), show_col_types = FALSE)
+  trade_processed <- trade_data %>%
+    dplyr::select(-`Country Code`, -`Indicator Name`, -`Indicator Code`, -`...69`) %>%
+    dplyr::rename(Country_Raw = `Country Name`) %>%
+    dplyr::mutate(Country = map_chr(Country_Raw, harmonize_country_name)) %>%
+    dplyr::select(-Country_Raw) %>%
+    dplyr::mutate(across(everything() & !Country, as.character)) %>%
+    tidyr::pivot_longer(cols = -Country, names_to = "year", values_to = "value") %>%
+    dplyr::mutate(year = as.numeric(year), value = as.numeric(value)) %>%
+    dplyr::filter(!is.na(value), !is.na(year)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Trade to GDP Ratio Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Trade to GDP Ratio Index`)
+  
+  # LPI
+  lpi_data <- readxl::read_excel(file.path(data_path, "International_LPI_from_2007_to_2023.xlsx"))
+  lpi_processed <- lpi_data %>%
+    dplyr::mutate(Country = map_chr(country, harmonize_country_name)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(`LPI Score`, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Logistics Performance Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Logistics Performance Index`)
+  
+  # Modern Renewables
+  renewables_data <- readxl::read_excel(file.path(data_path, "Share of modern renewables database.xlsx"))
+  renewables_processed <- renewables_data %>%
+    dplyr::mutate(Country = map_chr(`Country/Region`, harmonize_country_name)) %>%
+    dplyr::select(-`Country/Region`) %>%
+    tidyr::pivot_longer(cols = -Country, names_to = "year", values_to = "value") %>%
+    dplyr::mutate(value = dplyr::na_if(value, ".."), value = as.numeric(value)) %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Modern Renewables Share Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Modern Renewables Share Index`)
+  
+  # CO2 Intensity (from CO2toGDP data) - with error handling
+  co2_data <- readr::read_csv(file.path(data_path, "Co2toGDP_Data.csv"), show_col_types = FALSE)
+  co2_processed <- co2_data %>%
+    dplyr::rename(Country_Raw = `Country Name`) %>%
+    dplyr::mutate(Country = map_chr(Country_Raw, harmonize_country_name)) %>%
+    dplyr::select(Country, `2023 [YR2023]`) %>%
+    dplyr::mutate(value = suppressWarnings(as.numeric(`2023 [YR2023]`))) %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`CO2 Intensity Index` = sprintf("%.3f", 1 - normalize_minmax(value))) %>%  # Inverted: lower CO2 = better
+    dplyr::select(Country, `CO2 Intensity Index`)
+  
+  # Business Ready
+  business_data <- readxl::read_excel(file.path(data_path, "Business-Ready.xlsx"))
+  business_processed <- business_data %>%
+    dplyr::filter(!is.na(Economy), !is.na(`DB 2020`), Economy != "Region") %>%
+    dplyr::mutate(Country = map_chr(Economy, harmonize_country_name)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(`DB 2020`, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Business Ready Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Business Ready Index`)
+  
+  # Political Stability
+  political_data <- haven::read_dta(file.path(data_path, "Political Stability.dta"))
+  political_processed <- political_data %>%
+    dplyr::filter(indicator == "pv", !is.na(estimate)) %>%
+    dplyr::mutate(Country = map_chr(countryname, harmonize_country_name), value = estimate + 2.5) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Political Stability Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Political Stability Index`)
+  
+  # ------------------ CREATE 227 COUNTRIES DATASET ------------------
+  
+  message("\nCreating 227 countries dataset...")
+  
+  # Join all datasets
+  core_pillars_227 <- master_227_countries %>%
+    dplyr::left_join(internet_processed, by = "Country") %>%
+    dplyr::left_join(mobile_processed, by = "Country") %>%
+    dplyr::left_join(trade_processed, by = "Country") %>%
+    dplyr::left_join(lpi_processed, by = "Country") %>%
+    dplyr::left_join(renewables_processed, by = "Country") %>%
+    dplyr::left_join(co2_processed, by = "Country") %>%
+    dplyr::left_join(business_processed, by = "Country") %>%
+    dplyr::left_join(political_processed, by = "Country") %>%
+    # Replace NAs with "N/A" for clean presentation
+    dplyr::mutate(across(-c(Country, Region), ~ ifelse(is.na(.x), "N/A", .x))) %>%
+    # Select columns in exact order for export function (10 columns total)
+    dplyr::select(
+      Country, Region,
+      `Internet Penetration Index`, `Mobile Connectivity Index`,
+      `Trade to GDP Ratio Index`, `Logistics Performance Index`,
+      `Modern Renewables Share Index`, `CO2 Intensity Index`,
+      `Business Ready Index`, `Political Stability Index`
+    ) %>%
+    dplyr::arrange(Country)
+  
+  # ------------------ CREATE 138 COUNTRIES DATASET WITH ENHANCED ASEAN + CHINA PRIORITY ------------------
+  
+  message("Creating 138 countries dataset (with substantial data + ASEAN + China priority)...")
+  
+  # Create 138 countries version - prioritize countries with data and ensure China + ASEAN are included
+  core_pillars_138 <- core_pillars_227 %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      data_count = sum(c(
+        `Internet Penetration Index` != "N/A", `Mobile Connectivity Index` != "N/A",
+        `Trade to GDP Ratio Index` != "N/A", `Logistics Performance Index` != "N/A",
+        `Modern Renewables Share Index` != "N/A", `CO2 Intensity Index` != "N/A",
+        `Business Ready Index` != "N/A", `Political Stability Index` != "N/A"
+      ))
+    ) %>%
+    dplyr::ungroup() %>%
+    # ENHANCED: Ensure China and ALL ASEAN countries are included regardless of data completeness
+    dplyr::mutate(
+      priority_score = dplyr::case_when(
+        Region == "CHINA" ~ 2000,  # Highest priority for China
+        Region == "ASEAN" ~ 1500,  # High priority for all ASEAN countries
+        TRUE ~ data_count
+      )
+    ) %>%
+    dplyr::arrange(desc(priority_score), Country) %>%
+    dplyr::slice_head(n = 138) %>%
+    dplyr::select(-data_count, -priority_score) %>%
+    dplyr::arrange(Country)
+  
+  # Verify China and ASEAN inclusion
+  china_included_227 <- any(stringr::str_detect(stringr::str_to_upper(core_pillars_227$Country), "CHINA"))
+  china_included_138 <- any(stringr::str_detect(stringr::str_to_upper(core_pillars_138$Country), "CHINA"))
+  
+  asean_countries_in_227 <- core_pillars_227 %>% dplyr::filter(Region == "ASEAN") %>% nrow()
+  asean_countries_in_138 <- core_pillars_138 %>% dplyr::filter(Region == "ASEAN") %>% nrow()
+  
+  asean_list_227 <- core_pillars_227 %>% dplyr::filter(Region == "ASEAN") %>% pull(Country)
+  asean_list_138 <- core_pillars_138 %>% dplyr::filter(Region == "ASEAN") %>% pull(Country)
+  
+  # ------------------ EXPORT USING EXACT FORMAT FUNCTION ------------------
+  
+  message("\nExporting using exact format function with footnotes...")
+  
+  dir.create(export_path, recursive = TRUE, showWarnings = FALSE)
+  
+  # Export 227 countries version
+  export_annex_exact_format(
+    core_pillars_227, 
+    file.path(export_path, "Core_Pillars_Annex_227_Final.xlsx")
+  )
+  
+  # Export 138 countries version
+  export_annex_exact_format(
+    core_pillars_138, 
+    file.path(export_path, "Core_Pillars_Annex_138_Final.xlsx")
+  )
+  
+  # Export CSV versions for reference
+  readr::write_csv(core_pillars_227, file.path(export_path, "Core_Pillars_Annex_227_Final.csv"))
+  readr::write_csv(core_pillars_138, file.path(export_path, "Core_Pillars_Annex_138_Final.csv"))
+  
+  # Create China analysis
+  china_analysis_227 <- core_pillars_227 %>%
+    dplyr::filter(Region == "CHINA") %>%
+    tidyr::pivot_longer(cols = -c(Country, Region), names_to = "Indicator", values_to = "Value") %>%
+    dplyr::filter(Value != "N/A") %>%
+    dplyr::arrange(Indicator)
+  
+  china_analysis_138 <- core_pillars_138 %>%
+    dplyr::filter(Region == "CHINA") %>%
+    tidyr::pivot_longer(cols = -c(Country, Region), names_to = "Indicator", values_to = "Value") %>%
+    dplyr::filter(Value != "N/A") %>%
+    dplyr::arrange(Indicator)
+  
+  readr::write_csv(china_analysis_227, file.path(export_path, "China_Analysis_227_Final.csv"))
+  readr::write_csv(china_analysis_138, file.path(export_path, "China_Analysis_138_Final.csv"))
+  
+  # NEW: Create ASEAN analysis
+  asean_analysis_227 <- core_pillars_227 %>%
+    dplyr::filter(Region == "ASEAN") %>%
+    tidyr::pivot_longer(cols = -c(Country, Region), names_to = "Indicator", values_to = "Value") %>%
+    dplyr::filter(Value != "N/A") %>%
+    dplyr::arrange(Country, Indicator)
+  
+  asean_analysis_138 <- core_pillars_138 %>%
+    dplyr::filter(Region == "ASEAN") %>%
+    tidyr::pivot_longer(cols = -c(Country, Region), names_to = "Indicator", values_to = "Value") %>%
+    dplyr::filter(Value != "N/A") %>%
+    dplyr::arrange(Country, Indicator)
+  
+  readr::write_csv(asean_analysis_227, file.path(export_path, "ASEAN_Analysis_227_Final.csv"))
+  readr::write_csv(asean_analysis_138, file.path(export_path, "ASEAN_Analysis_138_Final.csv"))
+  
+  # Create final summary
+  final_summary <- list(
+    timestamp = "2025-06-04 15:35:55",
+    created_by = "Canomoncada",
+    title = "Final Annex Export - Core Pillars with Complete ASEAN",
+    countries_227 = nrow(core_pillars_227),
+    countries_138 = nrow(core_pillars_138),
+    china_included_227 = china_included_227,
+    china_included_138 = china_included_138,
+    asean_countries_227 = asean_countries_in_227,
+    asean_countries_138 = asean_countries_in_138,
+    asean_list_227 = asean_list_227,
+    asean_list_138 = asean_list_138,
+    asean_target_countries = asean_countries,
+    format_specifications = list(
+      header_rows = 2,
+      merged_cells = "Category headers span sub-indicators",
+      styling = "Light blue category headers, dark blue sub-headers",
+      footnote = "Source: Author's calculations using ITU, GSMA, World Bank, IRENA, and EDGAR.",
+      frozen_panes = "First 2 rows",
+      borders = "Full table borders applied",
+      missing_values = "N/A instead of blanks",
+      precision = "3 decimal places for all indices"
+    ),
+    indicators = list(
+      technology = c("Internet Penetration Index", "Mobile Connectivity Index"),
+      trade_investment = c("Trade to GDP Ratio Index", "Logistics Performance Index"),
+      sustainability = c("Modern Renewables Share Index", "CO2 Intensity Index"),
+      institutional = c("Business Ready Index", "Political Stability Index")
+    ),
+    regional_distribution_227 = core_pillars_227 %>% dplyr::count(Region, name = "Count"),
+    regional_distribution_138 = core_pillars_138 %>% dplyr::count(Region, name = "Count")
+  )
+  
+  jsonlite::write_json(final_summary, 
+                       file.path(export_path, "Final_Annex_Export_Summary.json"), 
+                       pretty = TRUE, auto_unbox = TRUE)
+  
+  # Final summary
+  cat("\n================================================================\n")
+  cat("FINAL ANNEX EXPORT COMPLETED WITH COMPLETE ASEAN INTEGRATION!\n")
+  cat("================================================================\n")
+  cat("Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-04 15:35:55\n")
+  cat("Current User's Login: Canomoncada\n")
+  cat("227 Countries Dataset: ", nrow(core_pillars_227), " countries\n")
+  cat("138 Countries Dataset: ", nrow(core_pillars_138), " countries\n")
+  cat("China included in 227: ", china_included_227, "\n")
+  cat("China included in 138: ", china_included_138, "\n")
+  cat("ASEAN countries in 227: ", asean_countries_in_227, "/10\n")
+  cat("ASEAN countries in 138: ", asean_countries_in_138, "/10\n")
+  cat("ASEAN countries included (227): ", paste(asean_list_227, collapse = ", "), "\n")
+  cat("ASEAN countries included (138): ", paste(asean_list_138, collapse = ", "), "\n")
+  cat("Perfect format applied: 2-row headers, merged cells, styling, footnotes\n")
+  cat("Column structure: Countries | Regions | 8 Sub-indicators (4 pillars)\n")
+  cat("Footnote added: Source attribution\n")
+  cat("Frozen panes: Header rows frozen\n")
+  cat("Missing values: N/A instead of blanks\n")
+  cat("Precision: 3 decimal places for all indices\n")
+  cat("\nFiles Created:\n")
+  cat("1. Core_Pillars_Annex_227_Final.xlsx (with footnotes)\n")
+  cat("2. Core_Pillars_Annex_138_Final.xlsx (with footnotes)\n")
+  cat("3. Core_Pillars_Annex_227_Final.csv\n")
+  cat("4. Core_Pillars_Annex_138_Final.csv\n")
+  cat("5. China_Analysis_227_Final.csv\n")
+  cat("6. China_Analysis_138_Final.csv\n")
+  cat("7. ASEAN_Analysis_227_Final.csv (NEW)\n")
+  cat("8. ASEAN_Analysis_138_Final.csv (NEW)\n")
+  cat("9. Final_Annex_Export_Summary.json\n")
+  cat("================================================================\n")
+  
+  return(list(
+    core_pillars_227 = core_pillars_227,
+    core_pillars_138 = core_pillars_138,
+    china_analysis_227 = china_analysis_227,
+    china_analysis_138 = china_analysis_138,
+    asean_analysis_227 = asean_analysis_227,
+    asean_analysis_138 = asean_analysis_138,
+    final_summary = final_summary
+  ))
+}
+
+##################################
+
+
+
+#' ================================================================
+#' GVC WTO DEVELOPMENT REPORT 2025 - DATA ANNEX WITH COMPLETE ASEAN
+#' ================================================================
+#' 
+#' @title Set Up and Harmonization of Raw Data and Calculation of Core Pillars
+#' @description Complete data processing pipeline for Global Value Chain readiness indicators
+#'              including Technology, Trade & Investment, Sustainability, and Institutional pillars
+#' 
+#' @author Anthony S Cano Moncada
+#' @email ac4479a@american.edu
+#' @date Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-04 15:31:45
+#' @login Current User's Login: Canomoncada
+#' 
+#' @report GVC WTO Development Report 2025 June 4
+#' @version Final Annex Export - Core Pillars Analysis with Complete ASEAN
+#' 
+#' @purpose This function performs comprehensive data harmonization and calculation
+#'          of normalized indices for Global Value Chain readiness assessment across
+#'          227 countries with focused analysis on 138 countries with substantial data
+#' 
+#' @organization Function Organization:
+#' 1. SETUP & LIBRARIES
+#'    - Required packages: tidyverse, readxl, haven, openxlsx
+#'    - Path configuration and environment setup
+#' 2. EXPORT FUNCTION DEFINITION
+#'    - Excel formatting with 2-row headers
+#'    - Professional styling and merged cells
+#'    - Frozen panes and footnote attribution
+#'    - Border styling and column sizing
+#' 3. DATA HARMONIZATION
+#'    - Master country list (227 countries)
+#'    - Regional classification (Africa, LAC, ASEAN, OECD, China, Other)
+#'    - COMPLETE ASEAN INTEGRATION: All 10 member countries guaranteed inclusion
+#'    - Country name harmonization mapping
+#'    - Min-max normalization function (0-1 scale)
+#' 4. INDICATOR PROCESSING (8 Sub-indicators)
+#'    - Technology Readiness: Internet Penetration Index (ITU), Mobile Connectivity Index (GSMA)
+#'    - Trade & Investment Readiness: Trade to GDP Ratio Index (World Bank), Logistics Performance Index (World Bank LPI)
+#'    - Sustainability Readiness: Modern Renewables Share Index (IRENA), CO2 Intensity Index (EDGAR, inverted)
+#'    - Institutional & Geopolitical Readiness: Business Ready Index (World Bank DB), Political Stability Index (WGI)
+#' 5. DATASET CREATION
+#'    - 227 Countries Dataset (complete master list)
+#'    - 138 Countries Dataset (substantial data availability)
+#'    - China prioritization (guaranteed inclusion)
+#'    - ASEAN prioritization (all 10 countries guaranteed inclusion)
+#'    - Data completeness scoring
+#' 6. EXPORT PROCESSING
+#'    - Excel files with perfect formatting
+#'    - CSV files for reference
+#'    - China-specific analysis
+#'    - ASEAN-specific analysis
+#'    - Summary documentation (JSON)
+#' 7. QUALITY ASSURANCE
+#'    - 3 decimal precision (sprintf "%.3f")
+#'    - N/A for missing values
+#'    - China inclusion verification
+#'    - ASEAN inclusion verification (all 10 countries)
+#'    - Regional distribution analysis
+#' 
+#' @methodology Core Pillars Methodology:
+#' - Technology Readiness: Average of Internet Penetration and Mobile Connectivity
+#' - Trade & Investment Readiness: Average of Trade to GDP Ratio and Logistics Performance
+#' - Sustainability Readiness: Combination of Modern Renewables and inverted CO2 Intensity
+#' - Institutional Readiness: Average of Business Environment and Political Stability
+#' 
+#' @data_sources
+#' - ITU: International Telecommunication Union (Internet usage statistics)
+#' - GSMA: GSM Association (Mobile connectivity index 2024)
+#' - World Bank: Trade statistics, LPI, and Doing Business indicators
+#' - IRENA: International Renewable Energy Agency (Modern renewables data)
+#' - EDGAR: Emissions Database for Global Atmospheric Research (CO2 intensity)
+#' - WGI: Worldwide Governance Indicators (Political stability)
+#' 
+#' @outputs
+#' 1. Core_Pillars_Annex_227_Final.xlsx - Complete country dataset with formatting
+#' 2. Core_Pillars_Annex_138_Final.xlsx - Substantial data subset with formatting  
+#' 3. Core_Pillars_Annex_227_Final.csv - Complete dataset reference file
+#' 4. Core_Pillars_Annex_138_Final.csv - Subset reference file
+#' 5. China_Analysis_227_Final.csv - China-specific indicator analysis
+#' 6. China_Analysis_138_Final.csv - China analysis for subset
+#' 7. ASEAN_Analysis_227_Final.csv - ASEAN-specific indicator analysis (NEW)
+#' 8. ASEAN_Analysis_138_Final.csv - ASEAN analysis for subset (NEW)
+#' 9. Final_Annex_Export_Summary.json - Complete process documentation
+#' 
+#' @note All indicators normalized to 0-1 scale using min-max normalization
+#'       Missing values represented as "N/A", precision set to 3 decimal places
+#'       Excel files include professional formatting with footnote attribution
+#'       ASEAN: All 10 member countries guaranteed inclusion in both datasets
+#' 
+#' ================================================================
+
+create_final_annex_export_complete <- function(data_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data/",
+                                               export_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex") {
+  
+  cat("================================================================\n")
+  cat("GVC WTO DEVELOPMENT REPORT 2025 - DATA ANNEX WITH COMPLETE ASEAN\n")
+  cat("================================================================\n")
+  cat("Author: Anthony S Cano Moncada (ac4479a@american.edu)\n")
+  cat("Report: GVC WTO Development Report 2025 June 4\n")
+  cat("Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-04 15:31:45\n")
+  cat("Current User's Login: Canomoncada\n")
+  cat("\nProcessing: Set Up and Harmonization of Raw Data and Calculation\n")
+  cat("Creating: 227 countries + 138 countries Core Pillars datasets\n")
+  cat("Format: Professional Excel export with footnotes and precision formatting\n")
+  cat("Methodology: Min-max normalization, 3 decimal precision, N/A for missing\n")
+  cat("ASEAN Integration: All 10 member countries guaranteed inclusion\n")
+  cat("================================================================\n\n")
+  
+  # Load required libraries
+  suppressPackageStartupMessages({
+    library(tidyverse)
+    library(readxl)
+    library(haven)
+    library(openxlsx)
+  })
+  
+  # ------------------ ASEAN COUNTRIES DEFINITION ------------------
+  
+  # Complete ASEAN member countries list (10 countries)
+  asean_countries <- c(
+    "Brunei",           # Brunei Darussalam
+    "Cambodia",         # Kingdom of Cambodia  
+    "Indonesia",        # Republic of Indonesia
+    "Laos",            # Lao People's Democratic Republic
+    "Malaysia",         # Malaysia
+    "Myanmar",          # Republic of the Union of Myanmar
+    "Philippines",      # Republic of the Philippines
+    "Singapore",        # Republic of Singapore
+    "Thailand",         # Kingdom of Thailand
+    "Vietnam"          # Socialist Republic of Vietnam
+  )
+  
+  message("ASEAN Countries Included (10 total):")
+  for(i in 1:length(asean_countries)) {
+    message(paste0("  ", i, ". ", asean_countries[i]))
+  }
+  message("")
+  
+  # ------------------ EXACT FORMAT EXPORT FUNCTION WITH FOOTNOTE ------------------
+  
+  export_annex_exact_format <- function(data, export_path = "Core_Pillars_Annex.xlsx") {
+    library(openxlsx)
+    
+    # Create workbook and worksheet
+    wb <- createWorkbook()
+    addWorksheet(wb, "Core Pillars")
+    
+    # Header Rows
+    row1 <- c("Core Pillars", "",
+              "Technology Readiness", "",
+              "Trade & Investment Readiness", "",
+              "Sustainability Readiness", "",
+              "Institutional & Geopolitical Readiness", "")
+    
+    row2 <- c("Countries", "Regions",
+              "Internet Penetration Index", "Mobile Connectivity Index",
+              "Trade to GDP Ratio Index", "Logistics Performance Index",
+              "Modern Renewables Share Index", "CO2 Intensity Index",
+              "Business Ready Index", "Political Stability Index")
+    
+    # Write headers
+    writeData(wb, "Core Pillars", t(row1), startRow = 1, startCol = 1, colNames = FALSE)
+    writeData(wb, "Core Pillars", t(row2), startRow = 2, startCol = 1, colNames = FALSE)
+    
+    # Write main data
+    writeData(wb, "Core Pillars", data, startRow = 3, startCol = 1, colNames = FALSE)
+    
+    # Styles
+    style_row1 <- createStyle(fontSize = 11, fontColour = "black", fgFill = "#D9E2F3",
+                              halign = "center", valign = "center", textDecoration = "bold", wrapText = TRUE)
+    style_row2 <- createStyle(fontSize = 10, fontColour = "white", fgFill = "#2F5597",
+                              halign = "center", valign = "center", textDecoration = "bold", wrapText = TRUE)
+    border_style <- createStyle(border = "TopBottomLeftRight", borderStyle = "thin")
+    footnote_style <- createStyle(fontSize = 9, fontColour = "#595959", valign = "top")
+    
+    # Apply styles
+    addStyle(wb, "Core Pillars", style_row1, rows = 1, cols = 1:10, gridExpand = TRUE)
+    addStyle(wb, "Core Pillars", style_row2, rows = 2, cols = 1:10, gridExpand = TRUE)
+    addStyle(wb, "Core Pillars", border_style, rows = 1:(nrow(data) + 2), cols = 1:10, gridExpand = TRUE)
+    
+    # Merge header cells
+    mergeCells(wb, "Core Pillars", cols = 1:2, rows = 1)  # Core Pillars
+    mergeCells(wb, "Core Pillars", cols = 3:4, rows = 1)  # Technology
+    mergeCells(wb, "Core Pillars", cols = 5:6, rows = 1)  # Trade & Investment
+    mergeCells(wb, "Core Pillars", cols = 7:8, rows = 1)  # Sustainability
+    mergeCells(wb, "Core Pillars", cols = 9:10, rows = 1) # Institutional
+    
+    # Row/Column Sizing
+    setRowHeights(wb, "Core Pillars", rows = 1:2, heights = c(30, 40))
+    setColWidths(wb, "Core Pillars", cols = 1:10, widths = "auto")
+    freezePane(wb, "Core Pillars", firstActiveRow = 3)
+    
+    # Add Footnote
+    footnote_row <- nrow(data) + 4
+    footnote_text <- "Source: Author's calculations using ITU, GSMA, World Bank, IRENA, and EDGAR."
+    writeData(wb, "Core Pillars", footnote_text, startRow = footnote_row, startCol = 1)
+    mergeCells(wb, "Core Pillars", cols = 1:10, rows = footnote_row)
+    addStyle(wb, "Core Pillars", footnote_style, rows = footnote_row, cols = 1, gridExpand = TRUE)
+    
+    # Save file
+    saveWorkbook(wb, export_path, overwrite = TRUE)
+    message("Exported with footnote to: ", export_path)
+  }
+  
+  # ------------------ DATA PREPARATION WITH ENHANCED ASEAN INTEGRATION ------------------
+  
+  message("Loading and processing all datasets...")
+  
+  # Load master countries
+  countries_world <- readr::read_csv(file.path(data_path, "countries of the world.csv"), show_col_types = FALSE)
+  
+  master_227_countries <- countries_world %>%
+    dplyr::select(Country, Region) %>%
+    dplyr::mutate(
+      Country = stringr::str_trim(Country),
+      Region = dplyr::case_when(
+        stringr::str_detect(stringr::str_to_upper(Country), "CHINA") ~ "CHINA",
+        stringr::str_detect(stringr::str_to_upper(Region), "AFRICA|NORTHERN AFRICA|EASTERN AFRICA|WESTERN AFRICA|MIDDLE AFRICA|SOUTHERN AFRICA") ~ "Africa",
+        stringr::str_detect(stringr::str_to_upper(Region), "LATIN|CARIBBEAN|CENTRAL AMERICA|SOUTH AMERICA") ~ "LAC",
+        # ENHANCED ASEAN INTEGRATION: More comprehensive matching
+        Country %in% asean_countries | 
+          stringr::str_detect(stringr::str_to_upper(Country), "BRUNEI|CAMBODIA|INDONESIA|LAOS|MALAYSIA|MYANMAR|PHILIPPINES|SINGAPORE|THAILAND|VIETNAM") |
+          stringr::str_detect(stringr::str_to_upper(Country), "BRUNEI DARUSSALAM|LAO PEOPLE") ~ "ASEAN",
+        Country %in% c("Australia", "Austria", "Belgium", "Canada", "Czech Republic", "Denmark", "Finland", "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Japan", "Korea, South", "Luxembourg", "Netherlands", "New Zealand", "Norway", "Poland", "Portugal", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "United Kingdom", "United States") ~ "OECD",
+        TRUE ~ "Other"
+      )
+    ) %>%
+    dplyr::distinct(Country, .keep_all = TRUE) %>%
+    dplyr::arrange(Country)
+  
+  message("Total countries in master list: ", nrow(master_227_countries))
+  
+  # ENHANCED: Harmonization function with ASEAN-specific mappings
+  harmonize_country_name <- function(country_name) {
+    harmonization_map <- c(
+      "United States" = "United States", "USA" = "United States", "US" = "United States",
+      "United Kingdom" = "United Kingdom", "UK" = "United Kingdom",
+      "China" = "China", "People's Republic of China" = "China",
+      "Russia" = "Russia", "Russian Federation" = "Russia",
+      "South Korea" = "Korea, South", "Korea, Rep." = "Korea, South",
+      "Czech Republic" = "Czech Republic", "Czechia" = "Czech Republic",
+      "Slovakia" = "Slovakia", "Slovak Republic" = "Slovakia",
+      "Myanmar" = "Myanmar", "Burma" = "Myanmar",
+      "Iran" = "Iran", "Iran, Islamic Rep." = "Iran",
+      "Egypt" = "Egypt", "Egypt, Arab Rep." = "Egypt",
+      "Venezuela" = "Venezuela", "Venezuela, RB" = "Venezuela",
+      "Congo, Dem. Rep." = "Congo, Dem. Rep.", "Democratic Republic of the Congo" = "Congo, Dem. Rep.",
+      "Congo, Rep." = "Congo, Republic", "Republic of the Congo" = "Congo, Republic",
+      # ASEAN-specific harmonization
+      "Brunei Darussalam" = "Brunei", "Brunei" = "Brunei",
+      "Cambodia" = "Cambodia", "Kingdom of Cambodia" = "Cambodia",
+      "Indonesia" = "Indonesia", "Republic of Indonesia" = "Indonesia",
+      "Lao PDR" = "Laos", "Lao People's Democratic Republic" = "Laos", "Laos" = "Laos",
+      "Malaysia" = "Malaysia",
+      "Myanmar" = "Myanmar", "Burma" = "Myanmar", "Republic of the Union of Myanmar" = "Myanmar",
+      "Philippines" = "Philippines", "Republic of the Philippines" = "Philippines",
+      "Singapore" = "Singapore", "Republic of Singapore" = "Singapore",
+      "Thailand" = "Thailand", "Kingdom of Thailand" = "Thailand",
+      "Vietnam" = "Vietnam", "Viet Nam" = "Vietnam", "Socialist Republic of Vietnam" = "Vietnam"
+    )
+    clean_name <- stringr::str_trim(as.character(country_name))
+    return(ifelse(clean_name %in% names(harmonization_map), harmonization_map[clean_name], clean_name))
+  }
+  
+  # Normalization function
+  normalize_minmax <- function(x) {
+    rng <- range(x, na.rm = TRUE)
+    return((x - rng[1]) / (rng[2] - rng[1]))
+  }
+  
+  # Process all datasets with 3 decimal precision
+  message("Processing all individual datasets with 3 decimal precision...")
+  
+  # Internet Penetration
+  internet_data <- readr::read_csv(file.path(data_path, "Individuals-using-the-internet.csv"), show_col_types = FALSE)
+  internet_processed <- internet_data %>%
+    dplyr::mutate(Country = map_chr(entityName, harmonize_country_name)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(dataValue, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Internet Penetration Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Internet Penetration Index`)
+  
+  # Mobile Connectivity
+  gsma_data <- readr::read_csv(file.path(data_path, "GSMA_Data_2024.csv"), show_col_types = FALSE)
+  mobile_processed <- gsma_data %>%
+    dplyr::mutate(Country = map_chr(Country, harmonize_country_name)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(Index, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Mobile Connectivity Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Mobile Connectivity Index`)
+  
+  # Trade to GDP
+  trade_data <- readr::read_csv(file.path(data_path, "Trade (_ of GDP).csv"), show_col_types = FALSE)
+  trade_processed <- trade_data %>%
+    dplyr::select(-`Country Code`, -`Indicator Name`, -`Indicator Code`, -`...69`) %>%
+    dplyr::rename(Country_Raw = `Country Name`) %>%
+    dplyr::mutate(Country = map_chr(Country_Raw, harmonize_country_name)) %>%
+    dplyr::select(-Country_Raw) %>%
+    dplyr::mutate(across(everything() & !Country, as.character)) %>%
+    tidyr::pivot_longer(cols = -Country, names_to = "year", values_to = "value") %>%
+    dplyr::mutate(year = as.numeric(year), value = as.numeric(value)) %>%
+    dplyr::filter(!is.na(value), !is.na(year)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Trade to GDP Ratio Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Trade to GDP Ratio Index`)
+  
+  # LPI
+  lpi_data <- readxl::read_excel(file.path(data_path, "International_LPI_from_2007_to_2023.xlsx"))
+  lpi_processed <- lpi_data %>%
+    dplyr::mutate(Country = map_chr(country, harmonize_country_name)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(`LPI Score`, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Logistics Performance Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Logistics Performance Index`)
+  
+  # Modern Renewables
+  renewables_data <- readxl::read_excel(file.path(data_path, "Share of modern renewables database.xlsx"))
+  renewables_processed <- renewables_data %>%
+    dplyr::mutate(Country = map_chr(`Country/Region`, harmonize_country_name)) %>%
+    dplyr::select(-`Country/Region`) %>%
+    tidyr::pivot_longer(cols = -Country, names_to = "year", values_to = "value") %>%
+    dplyr::mutate(value = dplyr::na_if(value, ".."), value = as.numeric(value)) %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Modern Renewables Share Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Modern Renewables Share Index`)
+  
+  # CO2 Intensity (from CO2toGDP data) - with error handling
+  co2_data <- readr::read_csv(file.path(data_path, "Co2toGDP_Data.csv"), show_col_types = FALSE)
+  co2_processed <- co2_data %>%
+    dplyr::rename(Country_Raw = `Country Name`) %>%
+    dplyr::mutate(Country = map_chr(Country_Raw, harmonize_country_name)) %>%
+    dplyr::select(Country, `2023 [YR2023]`) %>%
+    dplyr::mutate(value = suppressWarnings(as.numeric(`2023 [YR2023]`))) %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`CO2 Intensity Index` = sprintf("%.3f", 1 - normalize_minmax(value))) %>%  # Inverted: lower CO2 = better
+    dplyr::select(Country, `CO2 Intensity Index`)
+  
+  # Business Ready
+  business_data <- readxl::read_excel(file.path(data_path, "Business-Ready.xlsx"))
+  business_processed <- business_data %>%
+    dplyr::filter(!is.na(Economy), !is.na(`DB 2020`), Economy != "Region") %>%
+    dplyr::mutate(Country = map_chr(Economy, harmonize_country_name)) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(`DB 2020`, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Business Ready Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Business Ready Index`)
+  
+  # Political Stability
+  political_data <- haven::read_dta(file.path(data_path, "Political Stability.dta"))
+  political_processed <- political_data %>%
+    dplyr::filter(indicator == "pv", !is.na(estimate)) %>%
+    dplyr::mutate(Country = map_chr(countryname, harmonize_country_name), value = estimate + 2.5) %>%
+    dplyr::group_by(Country) %>%
+    dplyr::summarize(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::filter(!is.na(value)) %>%
+    dplyr::mutate(`Political Stability Index` = sprintf("%.3f", normalize_minmax(value))) %>%
+    dplyr::select(Country, `Political Stability Index`)
+  
+  # ------------------ CREATE 227 COUNTRIES DATASET ------------------
+  
+  message("\nCreating 227 countries dataset...")
+  
+  # Join all datasets
+  core_pillars_227 <- master_227_countries %>%
+    dplyr::left_join(internet_processed, by = "Country") %>%
+    dplyr::left_join(mobile_processed, by = "Country") %>%
+    dplyr::left_join(trade_processed, by = "Country") %>%
+    dplyr::left_join(lpi_processed, by = "Country") %>%
+    dplyr::left_join(renewables_processed, by = "Country") %>%
+    dplyr::left_join(co2_processed, by = "Country") %>%
+    dplyr::left_join(business_processed, by = "Country") %>%
+    dplyr::left_join(political_processed, by = "Country") %>%
+    # Replace NAs with "N/A" for clean presentation
+    dplyr::mutate(across(-c(Country, Region), ~ ifelse(is.na(.x), "N/A", .x))) %>%
+    # Select columns in exact order for export function (10 columns total)
+    dplyr::select(
+      Country, Region,
+      `Internet Penetration Index`, `Mobile Connectivity Index`,
+      `Trade to GDP Ratio Index`, `Logistics Performance Index`,
+      `Modern Renewables Share Index`, `CO2 Intensity Index`,
+      `Business Ready Index`, `Political Stability Index`
+    ) %>%
+    dplyr::arrange(Country)
+  
+  # ------------------ CREATE 138 COUNTRIES DATASET WITH ENHANCED ASEAN + CHINA PRIORITY ------------------
+  
+  message("Creating 138 countries dataset (with substantial data + ASEAN + China priority)...")
+  
+  # Create 138 countries version - prioritize countries with data and ensure China + ASEAN are included
+  core_pillars_138 <- core_pillars_227 %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      data_count = sum(c(
+        `Internet Penetration Index` != "N/A", `Mobile Connectivity Index` != "N/A",
+        `Trade to GDP Ratio Index` != "N/A", `Logistics Performance Index` != "N/A",
+        `Modern Renewables Share Index` != "N/A", `CO2 Intensity Index` != "N/A",
+        `Business Ready Index` != "N/A", `Political Stability Index` != "N/A"
+      ))
+    ) %>%
+    dplyr::ungroup() %>%
+    # ENHANCED: Ensure China and ALL ASEAN countries are included regardless of data completeness
+    dplyr::mutate(
+      priority_score = dplyr::case_when(
+        Region == "CHINA" ~ 2000,  # Highest priority for China
+        Region == "ASEAN" ~ 1500,  # High priority for all ASEAN countries
+        TRUE ~ data_count
+      )
+    ) %>%
+    dplyr::arrange(desc(priority_score), Country) %>%
+    dplyr::slice_head(n = 138) %>%
+    dplyr::select(-data_count, -priority_score) %>%
+    dplyr::arrange(Country)
+  
+  # Verify China and ASEAN inclusion
+  china_included_227 <- any(stringr::str_detect(stringr::str_to_upper(core_pillars_227$Country), "CHINA"))
+  china_included_138 <- any(stringr::str_detect(stringr::str_to_upper(core_pillars_138$Country), "CHINA"))
+  
+  asean_countries_in_227 <- core_pillars_227 %>% dplyr::filter(Region == "ASEAN") %>% nrow()
+  asean_countries_in_138 <- core_pillars_138 %>% dplyr::filter(Region == "ASEAN") %>% nrow()
+  
+  asean_list_227 <- core_pillars_227 %>% dplyr::filter(Region == "ASEAN") %>% pull(Country)
+  asean_list_138 <- core_pillars_138 %>% dplyr::filter(Region == "ASEAN") %>% pull(Country)
+  
+  # ------------------ EXPORT USING EXACT FORMAT FUNCTION ------------------
+  
+  message("\nExporting using exact format function with footnotes...")
+  
+  dir.create(export_path, recursive = TRUE, showWarnings = FALSE)
+  
+  # Export 227 countries version
+  export_annex_exact_format(
+    core_pillars_227, 
+    file.path(export_path, "Core_Pillars_Annex_227_Final.xlsx")
+  )
+  
+  # Export 138 countries version
+  export_annex_exact_format(
+    core_pillars_138, 
+    file.path(export_path, "Core_Pillars_Annex_138_Final.xlsx")
+  )
+  
+  # Export CSV versions for reference
+  readr::write_csv(core_pillars_227, file.path(export_path, "Core_Pillars_Annex_227_Final.csv"))
+  readr::write_csv(core_pillars_138, file.path(export_path, "Core_Pillars_Annex_138_Final.csv"))
+  
+  # Create China analysis
+  china_analysis_227 <- core_pillars_227 %>%
+    dplyr::filter(Region == "CHINA") %>%
+    tidyr::pivot_longer(cols = -c(Country, Region), names_to = "Indicator", values_to = "Value") %>%
+    dplyr::filter(Value != "N/A") %>%
+    dplyr::arrange(Indicator)
+  
+  china_analysis_138 <- core_pillars_138 %>%
+    dplyr::filter(Region == "CHINA") %>%
+    tidyr::pivot_longer(cols = -c(Country, Region), names_to = "Indicator", values_to = "Value") %>%
+    dplyr::filter(Value != "N/A") %>%
+    dplyr::arrange(Indicator)
+  
+  readr::write_csv(china_analysis_227, file.path(export_path, "China_Analysis_227_Final.csv"))
+  readr::write_csv(china_analysis_138, file.path(export_path, "China_Analysis_138_Final.csv"))
+  
+  # NEW: Create ASEAN analysis
+  asean_analysis_227 <- core_pillars_227 %>%
+    dplyr::filter(Region == "ASEAN") %>%
+    tidyr::pivot_longer(cols = -c(Country, Region), names_to = "Indicator", values_to = "Value") %>%
+    dplyr::filter(Value != "N/A") %>%
+    dplyr::arrange(Country, Indicator)
+  
+  asean_analysis_138 <- core_pillars_138 %>%
+    dplyr::filter(Region == "ASEAN") %>%
+    tidyr::pivot_longer(cols = -c(Country, Region), names_to = "Indicator", values_to = "Value") %>%
+    dplyr::filter(Value != "N/A") %>%
+    dplyr::arrange(Country, Indicator)
+  
+  readr::write_csv(asean_analysis_227, file.path(export_path, "ASEAN_Analysis_227_Final.csv"))
+  readr::write_csv(asean_analysis_138, file.path(export_path, "ASEAN_Analysis_138_Final.csv"))
+  
+  # Create final summary
+  final_summary <- list(
+    timestamp = "2025-06-04 15:31:45",
+    created_by = "Canomoncada",
+    title = "Final Annex Export - Core Pillars with Complete ASEAN",
+    countries_227 = nrow(core_pillars_227),
+    countries_138 = nrow(core_pillars_138),
+    china_included_227 = china_included_227,
+    china_included_138 = china_included_138,
+    asean_countries_227 = asean_countries_in_227,
+    asean_countries_138 = asean_countries_in_138,
+    asean_list_227 = asean_list_227,
+    asean_list_138 = asean_list_138,
+    asean_target_countries = asean_countries,
+    format_specifications = list(
+      header_rows = 2,
+      merged_cells = "Category headers span sub-indicators",
+      styling = "Light blue category headers, dark blue sub-headers",
+      footnote = "Source: Author's calculations using ITU, GSMA, World Bank, IRENA, and EDGAR.",
+      frozen_panes = "First 2 rows",
+      borders = "Full table borders applied",
+      missing_values = "N/A instead of blanks",
+      precision = "3 decimal places for all indices"
+    ),
+    indicators = list(
+      technology = c("Internet Penetration Index", "Mobile Connectivity Index"),
+      trade_investment = c("Trade to GDP Ratio Index", "Logistics Performance Index"),
+      sustainability = c("Modern Renewables Share Index", "CO2 Intensity Index"),
+      institutional = c("Business Ready Index", "Political Stability Index")
+    ),
+    regional_distribution_227 = core_pillars_227 %>% dplyr::count(Region, name = "Count"),
+    regional_distribution_138 = core_pillars_138 %>% dplyr::count(Region, name = "Count")
+  )
+  
+  jsonlite::write_json(final_summary, 
+                       file.path(export_path, "Final_Annex_Export_Summary.json"), 
+                       pretty = TRUE, auto_unbox = TRUE)
+  
+  # Final summary
+  cat("\n================================================================\n")
+  cat("FINAL ANNEX EXPORT COMPLETED WITH COMPLETE ASEAN INTEGRATION!\n")
+  cat("================================================================\n")
+  cat("Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-04 15:31:45\n")
+  cat("Current User's Login: Canomoncada\n")
+  cat("227 Countries Dataset: ", nrow(core_pillars_227), " countries\n")
+  cat("138 Countries Dataset: ", nrow(core_pillars_138), " countries\n")
+  cat("China included in 227: ", china_included_227, "\n")
+  cat("China included in 138: ", china_included_138, "\n")
+  cat("ASEAN countries in 227: ", asean_countries_in_227, "/10\n")
+  cat("ASEAN countries in 138: ", asean_countries_in_138, "/10\n")
+  cat("ASEAN countries included (227): ", paste(asean_list_227, collapse = ", "), "\n")
+  cat("ASEAN countries included (138): ", paste(asean_list_138, collapse = ", "), "\n")
+  cat("Perfect format applied: 2-row headers, merged cells, styling, footnotes\n")
+  cat("Column structure: Countries | Regions | 8 Sub-indicators (4 pillars)\n")
+  cat("Footnote added: Source attribution\n")
+  cat("Frozen panes: Header rows frozen\n")
+  cat("Missing values: N/A instead of blanks\n")
+  cat("Precision: 3 decimal places for all indices\n")
+  cat("\nFiles Created:\n")
+  cat("1. Core_Pillars_Annex_227_Final.xlsx (with footnotes)\n")
+  cat("2. Core_Pillars_Annex_138_Final.xlsx (with footnotes)\n")
+  cat("3. Core_Pillars_Annex_227_Final.csv\n")
+  cat("4. Core_Pillars_Annex_138_Final.csv\n")
+  cat("5. China_Analysis_227_Final.csv\n")
+  cat("6. China_Analysis_138_Final.csv\n")
+  cat("7. ASEAN_Analysis_227_Final.csv (NEW)\n")
+  cat("8. ASEAN_Analysis_138_Final.csv (NEW)\n")
+  cat("9. Final_Annex_Export_Summary.json\n")
+  cat("================================================================\n")
+  
+  return(list(
+    core_pillars_227 = core_pillars_227,
+    core_pillars_138 = core_pillars_138,
+    china_analysis_227 = china_analysis_227,
+    china_analysis_138 = china_analysis_138,
+    asean_analysis_227 = asean_analysis_227,
+    asean_analysis_138 = asean_analysis_138,
+    final_summary = final_summary
+  ))
+}
+
+# Execute the final annex export
+cat("================================================================\n")
+cat("EXECUTING FINAL ANNEX EXPORT - COMPLETE WITH ASEAN INTEGRATION\n")
+cat("================================================================\n")
+
+results <- create_final_annex_export_complete()
+
+cat("\nFinal annex export completed successfully!\n")
+cat("Publication-ready Excel files with perfect formatting and footnotes.\n")
+cat("Both 227 and 138 countries versions created with China + ASEAN included.\n")
+cat("ASEAN Countries (10 total): Brunei, Cambodia, Indonesia, Laos, Malaysia, Myanmar, Philippines, Singapore, Thailand, Vietnam\n")
+cat("Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-04 15:31:45\n")
+cat("Current User's Login: Canomoncada\n")
