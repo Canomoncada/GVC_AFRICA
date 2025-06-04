@@ -1,0 +1,39 @@
+Package: AfricaGVCDiagnostics
+Type: Package
+Title: Elite Publication-Ready Africa GVC Readiness Diagnostics
+Version: 1.0.0
+Date: 2025-06-04
+Authors@R: c(
+    person("Anthony S.", "Cano Moncada", email = "canomoncada@example.com", role = c("aut", "cre")),
+    person("GitHub", "Copilot", role = "ctb")
+)
+Description: A comprehensive analytical framework for Africa's Global Value Chain (GVC) 
+    readiness diagnostics with elite publication-ready outputs. Provides comparative 
+    analysis across Africa, LAC, ASEAN, OECD, and China as distinct regions with 
+    0-1 normalized indicators, advanced visualizations, and policy-relevant insights.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.0
+Depends: R (>= 4.0.0)
+Imports:
+    dplyr (>= 1.0.0),
+    ggplot2 (>= 3.4.0),
+    tidyr (>= 1.3.0),
+    scales (>= 1.2.0),
+    readr (>= 2.1.0),
+    tibble (>= 3.2.0),
+    stringr (>= 1.5.0),
+    ggrepel (>= 0.9.0),
+    FactoMineR (>= 2.8),
+    ggcorrplot (>= 0.1.4),
+    networkD3 (>= 0.4),
+    htmlwidgets (>= 1.6.0)
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    devtools
+VignetteBuilder: knitr
+URL: https://github.com/canomoncada/GVC_AFRICA
+BugReports: https://github.com/canomoncada/GVC_AFRICA/issues
