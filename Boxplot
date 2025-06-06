@@ -1636,3 +1636,909 @@ if (successful_figures == length(figure_specs) && successful_rankings == length(
   message("Successful rankings: ", successful_rankings, "/", length(figure_specs))
   message(paste(rep("=", 80), collapse=""))
 }
+
+
+
+
+
+###################################################################################################################
+###################################################################################################################
+##################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ================================================================
+# Statistical Description Analysis for GAI Editorial Project with Comprehensive Rankings
+# Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-06 13:15:15
+# Current User's Login: Canomoncada
+# Version: Statistical_Description_v2.1_GVC_AFRICA_EXPORT
+# ================================================================
+
+# Load required libraries
+library(readr)
+library(dplyr)
+library(openxlsx)
+library(tidyr)
+library(fs)
+library(stringr)
+
+# Set execution metadata
+execution_metadata <- list(
+  datetime_utc = "2025-06-06 13:15:15",
+  user = "Canomoncada",
+  version = "Statistical_Description_v2.1_GVC_AFRICA_EXPORT",
+  analysis_type = "Comprehensive Statistical Summary with Four-Pillar Rankings",
+  data_source = "Clean GAI Editorial Indicators",
+  export_path = "/Volumes/VALEN/Africa:LAC/Harmonization/GVC AFRICA"
+)
+
+message("Statistical Description Analysis with Comprehensive Rankings Started")
+message("Timestamp: ", execution_metadata$datetime_utc)
+message("User: ", execution_metadata$user)
+message("Export Path: ", execution_metadata$export_path)
+
+# ================================================================
+# CREATE EXPORT DIRECTORY
+# ================================================================
+
+# Create the export directory if it doesn't exist
+tryCatch({
+  fs::dir_create(execution_metadata$export_path, recurse = TRUE)
+  fs::dir_create(file.path(execution_metadata$export_path, "gai_editorial_analysis"), recurse = TRUE)
+  fs::dir_create(file.path(execution_metadata$export_path, "comprehensive_rankings"), recurse = TRUE)
+  message("✓ Export directories created/verified: ", execution_metadata$export_path)
+  message("  - Main: ", execution_metadata$export_path)
+  message("  - GAI Editorial: ", file.path(execution_metadata$export_path, "gai_editorial_analysis"))
+  message("  - Rankings: ", file.path(execution_metadata$export_path, "comprehensive_rankings"))
+}, error = function(e) {
+  message("✗ Error creating export directory: ", e$message)
+  stop("Cannot proceed without export directory")
+})
+
+# ================================================================
+# LOAD CLEANED DATASETS
+# ================================================================
+
+message("\nLoading cleaned datasets...")
+
+# Load the cleaned datasets with error handling
+tryCatch({
+  tech <- read_csv("Technology_Indicators_CLEAN.csv")
+  message("✓ Technology_Indicators_CLEAN.csv loaded: ", nrow(tech), " countries")
+}, error = function(e) {
+  message("✗ Error loading Technology data: ", e$message)
+  tech <- NULL
+})
+
+tryCatch({
+  sustain <- read_csv("Sustainability_Indicators_CLEAN.csv")
+  message("✓ Sustainability_Indicators_CLEAN.csv loaded: ", nrow(sustain), " countries")
+}, error = function(e) {
+  message("✗ Error loading Sustainability data: ", e$message)
+  sustain <- NULL
+})
+
+tryCatch({
+  geo <- read_csv("Geopolitical_Indicators_CLEAN.csv")
+  message("✓ Geopolitical_Indicators_CLEAN.csv loaded: ", nrow(geo), " countries")
+}, error = function(e) {
+  message("✗ Error loading Geopolitical data: ", e$message)
+  geo <- NULL
+})
+
+# Verify all data is loaded
+if (is.null(tech) || is.null(sustain) || is.null(geo)) {
+  stop("ERROR: Could not load all clean data files. Please ensure files exist in working directory.")
+}
+
+# ================================================================
+# ENHANCED REGION MAPPING FUNCTION (GVC AFRICA ALIGNED)
+# ================================================================
+
+# Define region assignments based on GAI Editorial standards (aligned with GVC pipeline)
+assign_region <- function(country) {
+  if (is.na(country) || country == "") return(NA_character_)
+  
+  # Exact 101 countries as specified in GVC pipeline
+  africa_countries <- c(
+    "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cameroon", 
+    "Chad", "Comoros", "Djibouti", "Egypt", "Equatorial Guinea", "Ethiopia", "Gabon", 
+    "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", "Libya", 
+    "Madagascar", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", 
+    "Namibia", "Niger", "Nigeria", "Rwanda", "Senegal", "Seychelles", "Sierra Leone", 
+    "Somalia", "South Africa", "Sudan", "Togo", "Tunisia", "Zimbabwe"
+  )
+  
+  oecd_countries <- c(
+    "Australia", "Austria", "Belgium", "Canada", "Czech Republic", "Denmark", 
+    "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Iceland", 
+    "Ireland", "Israel", "Italy", "Japan", "Latvia", "Lithuania", "Luxembourg", 
+    "Netherlands", "New Zealand", "Norway", "Poland", "Portugal", "Slovakia", 
+    "Slovenia", "Spain", "Sweden", "Switzerland"
+  )
+  
+  lac_countries <- c(
+    "Argentina", "Belize", "Brazil", "Chile", "Colombia", "Costa Rica", 
+    "Dominican Republic", "Ecuador", "El Salvador", "Guatemala", "Guyana", 
+    "Haiti", "Honduras", "Jamaica", "Mexico", "Nicaragua", "Panama", 
+    "Paraguay", "Peru", "Suriname", "Uruguay"
+  )
+  
+  asean_countries <- c(
+    "Brunei", "Cambodia", "Indonesia", "Laos", "Malaysia", 
+    "Philippines", "Singapore", "Thailand", "Vietnam"
+  )
+  
+  china_countries <- c("China")
+  
+  # Assign regions with priority order (matches GVC Africa pipeline)
+  if (country %in% africa_countries) {
+    return("AFRICA")
+  } else if (country %in% china_countries) {
+    return("CHINA")
+  } else if (country %in% lac_countries) {
+    return("LAC")
+  } else if (country %in% asean_countries) {
+    return("ASEAN")
+  } else if (country %in% oecd_countries) {
+    return("OECD")
+  } else {
+    return("OTHER")
+  }
+}
+
+# Add Region column to all datasets
+tech$Region <- sapply(tech$Country, assign_region)
+sustain$Region <- sapply(sustain$Country, assign_region)
+geo$Region <- sapply(geo$Country, assign_region)
+
+message("✓ Region assignments completed for all datasets using GVC AFRICA pipeline standards")
+
+# ================================================================
+# NORMALIZE INDICATORS FOR COMPREHENSIVE RANKING
+# ================================================================
+
+message("\n", paste(rep("=", 60), collapse=""))
+message("NORMALIZING INDICATORS FOR COMPREHENSIVE RANKING")
+message(paste(rep("=", 60), collapse=""))
+
+# Function to normalize indicators (min-max scaling to 0-1)
+normalize_indicators <- function(df, pillar_name) {
+  message("Normalizing ", pillar_name, " indicators...")
+  
+  # Get numeric columns (excluding Country and Region)
+  numeric_cols <- names(df)[sapply(df, is.numeric)]
+  
+  for (col in numeric_cols) {
+    values <- df[[col]]
+    valid_values <- values[!is.na(values) & is.finite(values)]
+    
+    if (length(valid_values) > 0) {
+      min_val <- min(valid_values)
+      max_val <- max(valid_values)
+      
+      if (max_val > min_val) {
+        normalized_values <- (values - min_val) / (max_val - min_val)
+        normalized_col_name <- paste0(col, "_Normalized")
+        df[[normalized_col_name]] <- normalized_values
+        message("  ✓ Normalized ", col, ": range [", round(min_val, 3), ", ", round(max_val, 3), "]")
+      } else {
+        df[[paste0(col, "_Normalized")]] <- values
+        message("  ! WARNING: ", col, " has constant values")
+      }
+    } else {
+      message("  ! WARNING: No valid values for ", col)
+    }
+  }
+  
+  return(df)
+}
+
+# Normalize all datasets
+tech_normalized <- normalize_indicators(tech, "Technology")
+sustain_normalized <- normalize_indicators(sustain, "Sustainability")
+geo_normalized <- normalize_indicators(geo, "Geopolitical")
+
+# ================================================================
+# STATISTICAL DESCRIPTION FUNCTION
+# ================================================================
+
+# Function to get comprehensive summary stats for all numeric columns
+describe_data <- function(df, pillar_name) {
+  cat("===== Statistical Description for", pillar_name, "=====\n")
+  
+  # Get numeric columns (excluding Country and Region)
+  numeric_cols <- df[, sapply(df, is.numeric)]
+  
+  if (ncol(numeric_cols) == 0) {
+    cat("No numeric columns found\n\n")
+    return(NULL)
+  }
+  
+  # Calculate comprehensive statistics
+  stats <- data.frame(
+    Indicator = names(numeric_cols),
+    N_Valid = sapply(numeric_cols, function(x) sum(!is.na(x))),
+    N_Missing = sapply(numeric_cols, function(x) sum(is.na(x))),
+    Mean = sapply(numeric_cols, mean, na.rm = TRUE),
+    Median = sapply(numeric_cols, median, na.rm = TRUE),
+    SD = sapply(numeric_cols, sd, na.rm = TRUE),
+    Min = sapply(numeric_cols, min, na.rm = TRUE),
+    Max = sapply(numeric_cols, max, na.rm = TRUE),
+    Q1 = sapply(numeric_cols, quantile, 0.25, na.rm = TRUE),
+    Q3 = sapply(numeric_cols, quantile, 0.75, na.rm = TRUE),
+    Coverage_Pct = round(sapply(numeric_cols, function(x) sum(!is.na(x)) / length(x) * 100), 1),
+    stringsAsFactors = FALSE
+  )
+  
+  # Round numeric values for better display
+  stats[, c("Mean", "Median", "SD", "Min", "Max", "Q1", "Q3")] <- 
+    round(stats[, c("Mean", "Median", "SD", "Min", "Max", "Q1", "Q3")], 4)
+  
+  print(stats, row.names = FALSE)
+  cat("\n")
+  
+  return(stats)
+}
+
+# ================================================================
+# REGIONAL SUMMARY FUNCTION
+# ================================================================
+
+# Function to create regional summaries
+create_regional_summary <- function(df, pillar_name) {
+  cat("===== Regional Summary for", pillar_name, "=====\n")
+  
+  if (!"Region" %in% names(df)) {
+    cat("No Region column found\n\n")
+    return(NULL)
+  }
+  
+  # Regional summary with comprehensive statistics
+  regional_summary <- df %>% 
+    group_by(Region) %>% 
+    summarise(
+      N_Countries = n(),
+      across(where(is.numeric), 
+             list(
+               mean = ~round(mean(.x, na.rm = TRUE), 4),
+               median = ~round(median(.x, na.rm = TRUE), 4),
+               sd = ~round(sd(.x, na.rm = TRUE), 4),
+               min = ~round(min(.x, na.rm = TRUE), 4),
+               max = ~round(max(.x, na.rm = TRUE), 4),
+               n_missing = ~sum(is.na(.x)),
+               coverage_pct = ~round(sum(!is.na(.x)) / n() * 100, 1)
+             )),
+      .groups = 'drop'
+    )
+  
+  print(regional_summary)
+  cat("\n")
+  
+  return(regional_summary)
+}
+
+# ================================================================
+# COMPREHENSIVE FOUR-PILLAR RANKING SYSTEM (GVC AFRICA ALIGNED)
+# ================================================================
+
+message("\n", paste(rep("=", 80), collapse=""))
+message("CREATING COMPREHENSIVE FOUR-PILLAR RANKING SYSTEM - GVC AFRICA ALIGNED")
+message(paste(rep("=", 80), collapse=""))
+
+# Define pillar mapping (using normalized columns)
+create_comprehensive_rankings <- function() {
+  # Merge all datasets on Country and Region
+  message("Merging datasets for comprehensive analysis...")
+  
+  # Get base columns from each dataset
+  tech_base <- tech_normalized %>% select(Country, Region)
+  sustain_base <- sustain_normalized %>% select(Country, Region)
+  geo_base <- geo_normalized %>% select(Country, Region)
+  
+  # Get all unique countries
+  all_countries <- unique(c(tech_base$Country, sustain_base$Country, geo_base$Country))
+  
+  # Create comprehensive dataset with all countries
+  comprehensive_data <- data.frame(
+    Country = all_countries,
+    stringsAsFactors = FALSE
+  )
+  
+  # Add regions
+  comprehensive_data$Region <- sapply(comprehensive_data$Country, assign_region)
+  
+  # Merge normalized indicators from each pillar
+  # Technology indicators
+  tech_normalized_cols <- names(tech_normalized)[str_detect(names(tech_normalized), "_Normalized$")]
+  if (length(tech_normalized_cols) > 0) {
+    tech_for_merge <- tech_normalized %>% select(Country, all_of(tech_normalized_cols))
+    comprehensive_data <- comprehensive_data %>% left_join(tech_for_merge, by = "Country")
+    message("  ✓ Added ", length(tech_normalized_cols), " normalized Technology indicators")
+  }
+  
+  # Sustainability indicators
+  sustain_normalized_cols <- names(sustain_normalized)[str_detect(names(sustain_normalized), "_Normalized$")]
+  if (length(sustain_normalized_cols) > 0) {
+    sustain_for_merge <- sustain_normalized %>% select(Country, all_of(sustain_normalized_cols))
+    comprehensive_data <- comprehensive_data %>% left_join(sustain_for_merge, by = "Country")
+    message("  ✓ Added ", length(sustain_normalized_cols), " normalized Sustainability indicators")
+  }
+  
+  # Geopolitical indicators
+  geo_normalized_cols <- names(geo_normalized)[str_detect(names(geo_normalized), "_Normalized$")]
+  if (length(geo_normalized_cols) > 0) {
+    geo_for_merge <- geo_normalized %>% select(Country, all_of(geo_normalized_cols))
+    comprehensive_data <- comprehensive_data %>% left_join(geo_for_merge, by = "Country")
+    message("  ✓ Added ", length(geo_normalized_cols), " normalized Geopolitical indicators")
+  }
+  
+  # Calculate pillar scores (average of normalized indicators in each pillar)
+  message("Computing composite pillar scores...")
+  
+  if (length(tech_normalized_cols) > 0) {
+    comprehensive_data$Technology_Readiness <- rowMeans(
+      comprehensive_data[, tech_normalized_cols, drop = FALSE], 
+      na.rm = TRUE
+    )
+    comprehensive_data$Technology_Readiness[is.nan(comprehensive_data$Technology_Readiness)] <- NA
+    message("  ✓ Technology Readiness score computed")
+  }
+  
+  if (length(sustain_normalized_cols) > 0) {
+    comprehensive_data$Sustainability_Readiness <- rowMeans(
+      comprehensive_data[, sustain_normalized_cols, drop = FALSE], 
+      na.rm = TRUE
+    )
+    comprehensive_data$Sustainability_Readiness[is.nan(comprehensive_data$Sustainability_Readiness)] <- NA
+    message("  ✓ Sustainability Readiness score computed")
+  }
+  
+  if (length(geo_normalized_cols) > 0) {
+    comprehensive_data$Geopolitical_Readiness <- rowMeans(
+      comprehensive_data[, geo_normalized_cols, drop = FALSE], 
+      na.rm = TRUE
+    )
+    comprehensive_data$Geopolitical_Readiness[is.nan(comprehensive_data$Geopolitical_Readiness)] <- NA
+    message("  ✓ Geopolitical Readiness score computed")
+  }
+  
+  # Calculate overall readiness score
+  pillar_score_cols <- c()
+  if ("Technology_Readiness" %in% names(comprehensive_data)) pillar_score_cols <- c(pillar_score_cols, "Technology_Readiness")
+  if ("Sustainability_Readiness" %in% names(comprehensive_data)) pillar_score_cols <- c(pillar_score_cols, "Sustainability_Readiness")
+  if ("Geopolitical_Readiness" %in% names(comprehensive_data)) pillar_score_cols <- c(pillar_score_cols, "Geopolitical_Readiness")
+  
+  if (length(pillar_score_cols) > 0) {
+    comprehensive_data$Overall_Readiness <- rowMeans(
+      comprehensive_data[, pillar_score_cols, drop = FALSE], 
+      na.rm = TRUE
+    )
+    comprehensive_data$Overall_Readiness[is.nan(comprehensive_data$Overall_Readiness)] <- NA
+    message("  ✓ Overall Readiness score computed from ", length(pillar_score_cols), " pillars")
+  }
+  
+  # Create rankings
+  message("Creating rankings...")
+  
+  if ("Technology_Readiness" %in% names(comprehensive_data)) {
+    comprehensive_data$Tech_Rank <- rank(-comprehensive_data$Technology_Readiness, ties.method = "min", na.last = "keep")
+  }
+  
+  if ("Sustainability_Readiness" %in% names(comprehensive_data)) {
+    comprehensive_data$Sustain_Rank <- rank(-comprehensive_data$Sustainability_Readiness, ties.method = "min", na.last = "keep")
+  }
+  
+  if ("Geopolitical_Readiness" %in% names(comprehensive_data)) {
+    comprehensive_data$Geo_Rank <- rank(-comprehensive_data$Geopolitical_Readiness, ties.method = "min", na.last = "keep")
+  }
+  
+  if ("Overall_Readiness" %in% names(comprehensive_data)) {
+    comprehensive_data$Overall_Rank <- rank(-comprehensive_data$Overall_Readiness, ties.method = "min", na.last = "keep")
+  }
+  
+  # Filter to focus on target regions (GVC AFRICA aligned)
+  target_regions <- c("AFRICA", "OECD", "CHINA", "LAC", "ASEAN")
+  comprehensive_final <- comprehensive_data %>%
+    filter(Region %in% target_regions) %>%
+    arrange(Overall_Rank)
+  
+  message("Comprehensive ranking table created: ", nrow(comprehensive_final), " countries")
+  message("Target regions: ", paste(target_regions, collapse = ", "))
+  
+  return(comprehensive_final)
+}
+
+# Create comprehensive rankings
+comprehensive_rankings <- create_comprehensive_rankings()
+
+# ================================================================
+# RUN STATISTICAL DESCRIPTIONS
+# ================================================================
+
+message("\n", paste(rep("=", 60), collapse=""))
+message("RUNNING STATISTICAL DESCRIPTIONS")
+message(paste(rep("=", 60), collapse=""))
+
+# Run comprehensive analysis for each pillar
+tech_stats <- describe_data(tech, "Technology")
+sustain_stats <- describe_data(sustain, "Sustainability")
+geo_stats <- describe_data(geo, "Geopolitical")
+
+# ================================================================
+# RUN REGIONAL SUMMARIES
+# ================================================================
+
+message("\n", paste(rep("=", 60), collapse=""))
+message("RUNNING REGIONAL SUMMARIES")
+message(paste(rep("=", 60), collapse=""))
+
+# Run regional analysis for each pillar
+tech_regional <- create_regional_summary(tech, "Technology")
+sustain_regional <- create_regional_summary(sustain, "Sustainability")
+geo_regional <- create_regional_summary(geo, "Geopolitical")
+
+# ================================================================
+# ENHANCED EXCEL EXPORT WITH COMPREHENSIVE RANKINGS - GVC AFRICA PATH
+# ================================================================
+
+message("\n", paste(rep("=", 60), collapse=""))
+message("EXPORTING ENHANCED RESULTS WITH COMPREHENSIVE RANKINGS")
+message("Export Directory: ", execution_metadata$export_path)
+message("GAI Editorial Subdirectory: ", file.path(execution_metadata$export_path, "gai_editorial_analysis"))
+message(paste(rep("=", 60), collapse=""))
+
+# Regional colors for Excel styling (GVC AFRICA aligned)
+excel_region_colors <- list(
+  "LAC" = "#FFB366",        # Orange
+  "OECD" = "#66B3FF",       # Blue
+  "ASEAN" = "#66CC66",      # Green
+  "CHINA" = "#FF6666",      # Red
+  "AFRICA" = "#FFD700",     # Yellow
+  "OTHER" = "#CCCCCC"       # Gray
+)
+
+# Create comprehensive Excel workbook with enhanced styling
+create_enhanced_statistical_workbook <- function() {
+  wb <- createWorkbook()
+  
+  # Define styles
+  title_style <- createStyle(fontName = "Arial", fontSize = 14, textDecoration = "bold", halign = "center")
+  subtitle_style <- createStyle(fontName = "Arial", fontSize = 11, halign = "center", textDecoration = "italic")
+  header_style <- createStyle(fontName = "Arial", fontSize = 11, fontColour = "white", fgFill = "#1F78B4", textDecoration = "bold", halign = "center")
+  metadata_style <- createStyle(fontName = "Arial", fontSize = 9, halign = "center", fontColour = "gray")
+  
+  # Add metadata sheet
+  addWorksheet(wb, "Metadata")
+  metadata_df <- data.frame(
+    Parameter = c("Analysis Date", "User", "Version", "Analysis Type", "Data Source", "Export Path", 
+                  "Technology Indicators", "Sustainability Indicators", "Geopolitical Indicators", "Total Countries"),
+    Value = c(execution_metadata$datetime_utc, execution_metadata$user, 
+              execution_metadata$version, execution_metadata$analysis_type, 
+              execution_metadata$data_source, execution_metadata$export_path,
+              ncol(tech) - 2, ncol(sustain) - 2, ncol(geo) - 2, nrow(comprehensive_rankings)),
+    stringsAsFactors = FALSE
+  )
+  writeData(wb, "Metadata", metadata_df)
+  addStyle(wb, "Metadata", header_style, rows = 1, cols = 1:2)
+  
+  # ENHANCED: Add comprehensive rankings sheet
+  addWorksheet(wb, "Comprehensive_Rankings")
+  
+  # Title and content for comprehensive rankings
+  title_text <- "GAI Editorial - Comprehensive Multi-Pillar Readiness Rankings"
+  subtitle_text <- paste("Rankings based on normalized indicators (0-1 scale) - ", 
+                         format(Sys.Date(), "%Y"), " data (", 
+                         nrow(comprehensive_rankings), " countries)")
+  methodology_text <- "Methodology: Each pillar score = average of constituent normalized indicators. Overall Readiness = average of all pillar scores."
+  
+  writeData(wb, "Comprehensive_Rankings", title_text, startRow = 1)
+  writeData(wb, "Comprehensive_Rankings", subtitle_text, startRow = 2)
+  writeData(wb, "Comprehensive_Rankings", methodology_text, startRow = 3)
+  writeData(wb, "Comprehensive_Rankings", comprehensive_rankings, startRow = 5)
+  
+  # Apply styles to comprehensive rankings
+  addStyle(wb, "Comprehensive_Rankings", title_style, rows = 1, cols = 1)
+  addStyle(wb, "Comprehensive_Rankings", subtitle_style, rows = 2, cols = 1)
+  addStyle(wb, "Comprehensive_Rankings", metadata_style, rows = 3, cols = 1)
+  addStyle(wb, "Comprehensive_Rankings", header_style, rows = 5, cols = 1:ncol(comprehensive_rankings))
+  
+  # Apply regional colors to comprehensive rankings
+  tryCatch({
+    for (i in 1:nrow(comprehensive_rankings)) {
+      region <- comprehensive_rankings$Region[i]
+      if (!is.na(region) && region %in% names(excel_region_colors)) {
+        region_color <- excel_region_colors[[region]]
+        region_style <- createStyle(fgFill = region_color)
+        addStyle(wb, "Comprehensive_Rankings", region_style, rows = i + 5, cols = 1:2)  # Country and Region columns
+      }
+    }
+  }, error = function(e) {
+    message("Warning: Regional colors may not have applied to comprehensive rankings: ", e$message)
+  })
+  
+  # Add statistical summaries
+  if (!is.null(tech_stats)) {
+    addWorksheet(wb, "Technology_Stats")
+    writeData(wb, "Technology_Stats", "Technology Indicators - Statistical Summary", startRow = 1)
+    writeData(wb, "Technology_Stats", tech_stats, startRow = 3)
+    addStyle(wb, "Technology_Stats", title_style, rows = 1, cols = 1)
+    addStyle(wb, "Technology_Stats", header_style, rows = 3, cols = 1:ncol(tech_stats))
+  }
+  
+  if (!is.null(sustain_stats)) {
+    addWorksheet(wb, "Sustainability_Stats")
+    writeData(wb, "Sustainability_Stats", "Sustainability Indicators - Statistical Summary", startRow = 1)
+    writeData(wb, "Sustainability_Stats", sustain_stats, startRow = 3)
+    addStyle(wb, "Sustainability_Stats", title_style, rows = 1, cols = 1)
+    addStyle(wb, "Sustainability_Stats", header_style, rows = 3, cols = 1:ncol(sustain_stats))
+  }
+  
+  if (!is.null(geo_stats)) {
+    addWorksheet(wb, "Geopolitical_Stats")
+    writeData(wb, "Geopolitical_Stats", "Geopolitical Indicators - Statistical Summary", startRow = 1)
+    writeData(wb, "Geopolitical_Stats", geo_stats, startRow = 3)
+    addStyle(wb, "Geopolitical_Stats", title_style, rows = 1, cols = 1)
+    addStyle(wb, "Geopolitical_Stats", header_style, rows = 3, cols = 1:ncol(geo_stats))
+  }
+  
+  # Add regional summaries (truncated for Excel compatibility)
+  if (!is.null(tech_regional)) {
+    addWorksheet(wb, "Technology_Regional")
+    tech_regional_truncated <- tech_regional[, 1:min(20, ncol(tech_regional))]
+    writeData(wb, "Technology_Regional", "Technology Indicators - Regional Summary", startRow = 1)
+    writeData(wb, "Technology_Regional", tech_regional_truncated, startRow = 3)
+    addStyle(wb, "Technology_Regional", title_style, rows = 1, cols = 1)
+    addStyle(wb, "Technology_Regional", header_style, rows = 3, cols = 1:ncol(tech_regional_truncated))
+  }
+  
+  if (!is.null(sustain_regional)) {
+    addWorksheet(wb, "Sustainability_Regional")
+    sustain_regional_truncated <- sustain_regional[, 1:min(20, ncol(sustain_regional))]
+    writeData(wb, "Sustainability_Regional", "Sustainability Indicators - Regional Summary", startRow = 1)
+    writeData(wb, "Sustainability_Regional", sustain_regional_truncated, startRow = 3)
+    addStyle(wb, "Sustainability_Regional", title_style, rows = 1, cols = 1)
+    addStyle(wb, "Sustainability_Regional", header_style, rows = 3, cols = 1:ncol(sustain_regional_truncated))
+  }
+  
+  if (!is.null(geo_regional)) {
+    addWorksheet(wb, "Geopolitical_Regional")
+    geo_regional_truncated <- geo_regional[, 1:min(20, ncol(geo_regional))]
+    writeData(wb, "Geopolitical_Regional", "Geopolitical Indicators - Regional Summary", startRow = 1)
+    writeData(wb, "Geopolitical_Regional", geo_regional_truncated, startRow = 3)
+    addStyle(wb, "Geopolitical_Regional", title_style, rows = 1, cols = 1)
+    addStyle(wb, "Geopolitical_Regional", header_style, rows = 3, cols = 1:ncol(geo_regional_truncated))
+  }
+  
+  # Set column widths for all sheets
+  sheet_names <- getSheetNames(wb)
+  for (sheet in sheet_names) {
+    setColWidths(wb, sheet, cols = 1:20, widths = "auto")
+  }
+  
+  return(wb)
+}
+
+# Create and save the enhanced comprehensive workbook
+tryCatch({
+  enhanced_workbook <- create_enhanced_statistical_workbook()
+  comprehensive_file <- file.path(execution_metadata$export_path, "gai_editorial_analysis", 
+                                  paste0("GAI_Editorial_Statistical_Summary_COMPREHENSIVE_", 
+                                         str_replace_all(execution_metadata$datetime_utc, "[:-]", ""), ".xlsx"))
+  saveWorkbook(enhanced_workbook, comprehensive_file, overwrite = TRUE)
+  message("✓ Enhanced comprehensive statistical summary exported to: ", comprehensive_file)
+}, error = function(e) {
+  message("✗ Error creating enhanced comprehensive Excel workbook: ", e$message)
+})
+
+# Export comprehensive rankings separately
+tryCatch({
+  rankings_file <- file.path(execution_metadata$export_path, "comprehensive_rankings", 
+                             paste0("GAI_Editorial_Comprehensive_Multi_Pillar_Rankings_", 
+                                    str_replace_all(execution_metadata$datetime_utc, "[:-]", ""), ".xlsx"))
+  
+  wb_rankings <- createWorkbook()
+  addWorksheet(wb_rankings, "Multi_Pillar_Rankings")
+  
+  # Add title and content
+  title_text <- "GAI Editorial - Comprehensive Multi-Pillar Readiness Rankings"
+  subtitle_text <- paste("Rankings: 1 = highest performance - ", format(Sys.Date(), "%Y"), " data (", 
+                         nrow(comprehensive_rankings), " countries)")
+  metadata_text <- paste("Generated:", execution_metadata$datetime_utc, "UTC | User:", execution_metadata$user)
+  
+  writeData(wb_rankings, "Multi_Pillar_Rankings", title_text, startRow = 1)
+  writeData(wb_rankings, "Multi_Pillar_Rankings", subtitle_text, startRow = 2)
+  writeData(wb_rankings, "Multi_Pillar_Rankings", metadata_text, startRow = 3)
+  writeData(wb_rankings, "Multi_Pillar_Rankings", comprehensive_rankings, startRow = 5)
+  
+  # Apply regional colors
+  title_style <- createStyle(fontName = "Arial", fontSize = 14, textDecoration = "bold", halign = "center")
+  subtitle_style <- createStyle(fontName = "Arial", fontSize = 11, halign = "center", textDecoration = "italic")
+  metadata_style <- createStyle(fontName = "Arial", fontSize = 9, halign = "center", fontColour = "gray")
+  header_style <- createStyle(fontName = "Arial", fontSize = 11, fontColour = "white", fgFill = "#1F78B4", textDecoration = "bold", halign = "center")
+  
+  addStyle(wb_rankings, "Multi_Pillar_Rankings", title_style, rows = 1, cols = 1)
+  addStyle(wb_rankings, "Multi_Pillar_Rankings", subtitle_style, rows = 2, cols = 1)
+  addStyle(wb_rankings, "Multi_Pillar_Rankings", metadata_style, rows = 3, cols = 1)
+  addStyle(wb_rankings, "Multi_Pillar_Rankings", header_style, rows = 5, cols = 1:ncol(comprehensive_rankings))
+  
+  # Regional colors
+  for (i in 1:nrow(comprehensive_rankings)) {
+    region <- comprehensive_rankings$Region[i]
+    if (!is.na(region) && region %in% names(excel_region_colors)) {
+      region_color <- excel_region_colors[[region]]
+      region_style <- createStyle(fgFill = region_color)
+      addStyle(wb_rankings, "Multi_Pillar_Rankings", region_style, rows = i + 5, cols = 1:2)
+    }
+  }
+  
+  setColWidths(wb_rankings, "Multi_Pillar_Rankings", cols = 1:ncol(comprehensive_rankings), widths = "auto")
+  
+  saveWorkbook(wb_rankings, rankings_file, overwrite = TRUE)
+  message("✓ Comprehensive rankings exported separately: ", rankings_file)
+}, error = function(e) {
+  message("✗ Error creating comprehensive rankings file: ", e$message)
+})
+
+# Export individual statistical summaries to GAI Editorial subdirectory
+gai_export_path <- file.path(execution_metadata$export_path, "gai_editorial_analysis")
+
+tryCatch({
+  if (!is.null(tech_stats)) {
+    tech_file <- file.path(gai_export_path, "Technology_Indicators_Summary.xlsx")
+    write.xlsx(tech_stats, tech_file, overwrite = TRUE)
+    message("✓ Technology summary exported to: ", tech_file)
+  }
+}, error = function(e) {
+  message("✗ Error exporting Technology summary: ", e$message)
+})
+
+tryCatch({
+  if (!is.null(sustain_stats)) {
+    sustain_file <- file.path(gai_export_path, "Sustainability_Indicators_Summary.xlsx")
+    write.xlsx(sustain_stats, sustain_file, overwrite = TRUE)
+    message("✓ Sustainability summary exported to: ", sustain_file)
+  }
+}, error = function(e) {
+  message("✗ Error exporting Sustainability summary: ", e$message)
+})
+
+tryCatch({
+  if (!is.null(geo_stats)) {
+    geo_file <- file.path(gai_export_path, "Geopolitical_Indicators_Summary.xlsx")
+    write.xlsx(geo_stats, geo_file, overwrite = TRUE)
+    message("✓ Geopolitical summary exported to: ", geo_file)
+  }
+}, error = function(e) {
+  message("✗ Error exporting Geopolitical summary: ", e$message)
+})
+
+# Export regional summaries as CSV
+tryCatch({
+  if (!is.null(tech_regional)) {
+    tech_regional_file <- file.path(gai_export_path, "Technology_Regional_Summary.csv")
+    write.csv(tech_regional, tech_regional_file, row.names = FALSE)
+    message("✓ Technology regional summary exported to: ", tech_regional_file)
+  }
+}, error = function(e) {
+  message("✗ Error exporting Technology regional summary: ", e$message)
+})
+
+tryCatch({
+  if (!is.null(sustain_regional)) {
+    sustain_regional_file <- file.path(gai_export_path, "Sustainability_Regional_Summary.csv")
+    write.csv(sustain_regional, sustain_regional_file, row.names = FALSE)
+    message("✓ Sustainability regional summary exported to: ", sustain_regional_file)
+  }
+}, error = function(e) {
+  message("✗ Error exporting Sustainability regional summary: ", e$message)
+})
+
+tryCatch({
+  if (!is.null(geo_regional)) {
+    geo_regional_file <- file.path(gai_export_path, "Geopolitical_Regional_Summary.csv")
+    write.csv(geo_regional, geo_regional_file, row.names = FALSE)
+    message("✓ Geopolitical regional summary exported to: ", geo_regional_file)
+  }
+}, error = function(e) {
+  message("✗ Error exporting Geopolitical regional summary: ", e$message)
+})
+
+# Export comprehensive rankings as CSV
+tryCatch({
+  rankings_csv_file <- file.path(execution_metadata$export_path, "comprehensive_rankings", 
+                                 paste0("GAI_Editorial_Comprehensive_Multi_Pillar_Rankings_", 
+                                        str_replace_all(execution_metadata$datetime_utc, "[:-]", ""), ".csv"))
+  write.csv(comprehensive_rankings, rankings_csv_file, row.names = FALSE)
+  message("✓ Comprehensive rankings CSV exported to: ", rankings_csv_file)
+}, error = function(e) {
+  message("✗ Error exporting comprehensive rankings CSV: ", e$message)
+})
+
+# ================================================================
+# ENHANCED DATA QUALITY ASSESSMENT
+# ================================================================
+
+message("\n", paste(rep("=", 60), collapse=""))
+message("ENHANCED DATA QUALITY ASSESSMENT WITH COMPREHENSIVE RANKINGS")
+message(paste(rep("=", 60), collapse=""))
+
+# Enhanced data quality assessment
+assess_enhanced_data_quality <- function() {
+  total_countries <- unique(c(tech$Country, sustain$Country, geo$Country))
+  
+  cat("ENHANCED DATA QUALITY SUMMARY\n")
+  cat("=============================\n")
+  cat("Total unique countries:", length(total_countries), "\n")
+  cat("Technology indicators:", ncol(tech) - 2, "\n")
+  cat("Sustainability indicators:", ncol(sustain) - 2, "\n")
+  cat("Geopolitical indicators:", ncol(geo) - 2, "\n")
+  
+  # Coverage by pillar
+  tech_coverage <- round(mean(sapply(tech[sapply(tech, is.numeric)], function(x) sum(!is.na(x)) / length(x))), 3)
+  sustain_coverage <- round(mean(sapply(sustain[sapply(sustain, is.numeric)], function(x) sum(!is.na(x)) / length(x))), 3)
+  geo_coverage <- round(mean(sapply(geo[sapply(geo, is.numeric)], function(x) sum(!is.na(x)) / length(x))), 3)
+  
+  cat("\nDATA COVERAGE (% non-missing)\n")
+  cat("Technology:", tech_coverage * 100, "%\n")
+  cat("Sustainability:", sustain_coverage * 100, "%\n")
+  cat("Geopolitical:", geo_coverage * 100, "%\n")
+  
+  # Regional coverage
+  cat("\nREGIONAL DISTRIBUTION\n")
+  all_regions <- table(c(tech$Region, sustain$Region, geo$Region))
+  print(all_regions)
+  
+  # Comprehensive rankings summary
+  if (!is.null(comprehensive_rankings)) {
+    cat("\nCOMPREHENSIVE RANKINGS SUMMARY\n")
+    cat("Countries in comprehensive ranking:", nrow(comprehensive_rankings), "\n")
+    
+    # Top 10 performers
+    if ("Overall_Rank" %in% names(comprehensive_rankings)) {
+      top_10 <- comprehensive_rankings %>% 
+        filter(!is.na(Overall_Rank)) %>%
+        slice_head(n = 10) %>%
+        select(Overall_Rank, Country, Region)
+      
+      cat("\nTOP 10 OVERALL PERFORMERS:\n")
+      print(top_10, row.names = FALSE)
+      
+      # Regional performance
+      regional_performance <- comprehensive_rankings %>%
+        filter(!is.na(Overall_Readiness)) %>%
+        group_by(Region) %>%
+        summarise(
+          Countries = n(),
+          Avg_Score = round(mean(Overall_Readiness, na.rm = TRUE), 3),
+          Best_Rank = min(Overall_Rank, na.rm = TRUE),
+          .groups = "drop"
+        ) %>%
+        arrange(desc(Avg_Score))
+      
+      cat("\nREGIONAL PERFORMANCE SUMMARY:\n")
+      print(regional_performance, row.names = FALSE)
+    }
+  }
+  
+  # Create enhanced summary data frame for export
+  enhanced_quality_summary <- data.frame(
+    Metric = c("Total Countries", "Technology Indicators", "Sustainability Indicators", 
+               "Geopolitical Indicators", "Technology Coverage %", "Sustainability Coverage %", 
+               "Geopolitical Coverage %", "Countries in Comprehensive Ranking",
+               "Normalized Indicators Created", "Pillar Scores Computed"),
+    Value = c(length(total_countries), ncol(tech) - 2, ncol(sustain) - 2, ncol(geo) - 2,
+              tech_coverage * 100, sustain_coverage * 100, geo_coverage * 100,
+              nrow(comprehensive_rankings), 
+              sum(str_detect(names(comprehensive_rankings), "_Normalized$")),
+              sum(c("Technology_Readiness", "Sustainability_Readiness", "Geopolitical_Readiness") %in% names(comprehensive_rankings))),
+    stringsAsFactors = FALSE
+  )
+  
+  return(enhanced_quality_summary)
+}
+
+enhanced_quality_summary <- assess_enhanced_data_quality()
+
+# Export enhanced data quality assessment
+tryCatch({
+  quality_file <- file.path(gai_export_path, "Enhanced_Data_Quality_Assessment.xlsx")
+  write.xlsx(enhanced_quality_summary, quality_file, overwrite = TRUE)
+  message("✓ Enhanced data quality assessment exported to: ", quality_file)
+}, error = function(e) {
+  message("✗ Error exporting enhanced data quality assessment: ", e$message)
+})
+
+# ================================================================
+# FINAL ENHANCED SUMMARY
+# ================================================================
+
+message("\n", paste(rep("=", 80), collapse=""))
+message("GAI EDITORIAL STATISTICAL ANALYSIS WITH COMPREHENSIVE RANKINGS COMPLETED")
+message("EXPORT TO GVC AFRICA DIRECTORY SUCCESSFUL")
+message(paste(rep("=", 80), collapse=""))
+
+message("\nEXPORT DIRECTORY: ", execution_metadata$export_path)
+message("GAI EDITORIAL SUBDIRECTORY: ", file.path(execution_metadata$export_path, "gai_editorial_analysis"))
+message("COMPREHENSIVE RANKINGS: ", file.path(execution_metadata$export_path, "comprehensive_rankings"))
+
+message("\nCOMPLETED ENHANCED ANALYSES:")
+message("✓ Comprehensive statistical descriptions for all three pillars")
+message("✓ Regional summaries with detailed breakdowns")
+message("✓ Enhanced data quality assessment")
+message("✓ Indicator normalization (min-max scaling to 0-1)")
+message("✓ Comprehensive multi-pillar ranking system")
+message("✓ Overall readiness scores and rankings")
+message("✓ Regional performance analysis")
+message("✓ Multiple exports with enhanced styling")
+message("✓ GVC AFRICA aligned region assignments")
+
+message("\nGENERATED FILES IN GVC AFRICA DIRECTORY:")
+message("GAI Editorial Analysis Subdirectory:")
+message("- GAI_Editorial_Statistical_Summary_COMPREHENSIVE_*.xlsx (master workbook)")
+message("- Technology_Indicators_Summary.xlsx")
+message("- Sustainability_Indicators_Summary.xlsx")  
+message("- Geopolitical_Indicators_Summary.xlsx")
+message("- Technology_Regional_Summary.csv")
+message("- Sustainability_Regional_Summary.csv")
+message("- Geopolitical_Regional_Summary.csv")
+message("- Enhanced_Data_Quality_Assessment.xlsx")
+
+message("\nComprehensive Rankings Subdirectory:")
+message("- GAI_Editorial_Comprehensive_Multi_Pillar_Rankings_*.xlsx")
+message("- GAI_Editorial_Comprehensive_Multi_Pillar_Rankings_*.csv")
+
+message("\nNEW COMPREHENSIVE RANKING FEATURES:")
+message("✓ Normalized indicators (0-1 scale) for fair comparison")
+message("✓ Technology Readiness composite score")
+message("✓ Sustainability Readiness composite score")
+message("✓ Geopolitical Readiness composite score")
+message("✓ Overall Readiness score (average of all pillars)")
+message("✓ Individual pillar rankings")
+message("✓ Overall readiness ranking")
+message("✓ Regional performance benchmarking")
+message("✓ Top 10 performers identification")
+message("✓ Excel export with regional color coding")
+message("✓ GVC AFRICA pipeline alignment")
+
+message("\nSTATISTICS INCLUDED:")
+message("- N Valid, N Missing, Coverage %")
+message("- Mean, Median, Standard Deviation")
+message("- Min, Max, Q1, Q3")
+message("- Regional breakdowns for all metrics")
+message("- Comprehensive multi-pillar rankings")
+message("- Enhanced data quality metrics")
+
+if (!is.null(comprehensive_rankings) && "Overall_Rank" %in% names(comprehensive_rankings)) {
+  top_5 <- comprehensive_rankings %>% 
+    filter(!is.na(Overall_Rank)) %>%
+    slice_head(n = 5) %>%
+    select(Overall_Rank, Country, Region, Overall_Readiness)
+  
+  message("\nTOP 5 OVERALL PERFORMERS:")
+  for (i in 1:nrow(top_5)) {
+    message("  ", top_5$Overall_Rank[i], ". ", top_5$Country[i], " (", top_5$Region[i], ") - Score: ", round(top_5$Overall_Readiness[i], 3))
+  }
+}
+
+message("\nAnalysis completed at:", Sys.time())
+message("User:", execution_metadata$user)
+message("Export path:", execution_metadata$export_path)
+message("All enhanced statistical summaries with comprehensive rankings exported to GVC AFRICA directory!")
+
+message("\n", paste(rep("=", 80), collapse=""))
+message("SUCCESS: GAI EDITORIAL ANALYSIS EXPORTED TO GVC AFRICA DIRECTORY")
+message("Ready for integration with GVC Africa project workflows")
+message(paste(rep("=", 80), collapse=""))
