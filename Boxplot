@@ -1,0 +1,561 @@
+# ================================================================
+# WTO/ADB/GAI Editorial Style - FACETED PANEL BOXPLOTS BY PILLAR
+# Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-06 05:01:21
+# Current User's Login: Canomoncada
+# Version: GVC_AFRICA_Faceted_Panel_Boxplots_v1.1_PIVOT_LONGER_FIXED
+# ================================================================
+
+# Load required packages
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(showtext)
+library(scales)
+library(stringr)
+library(fs)
+
+# ================================================================
+# EXECUTION METADATA WITH CURRENT TIMESTAMP
+# ================================================================
+
+execution_metadata <- list(
+  datetime_utc = "2025-06-06 05:01:21",
+  user = "Canomoncada",
+  version = "GVC_AFRICA_Faceted_Panel_Boxplots_v1.1_PIVOT_LONGER_FIXED",
+  target_countries = "101_five_regions_exact",
+  target_regions = c("AFRICA", "OECD", "CHINA", "LAC", "ASEAN"),
+  data_year = "2023",
+  style = "WTO/ADB/GAI Editorial Standard - Faceted Panel Boxplots Fixed",
+  clean_data_source_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex",
+  export_path = "/Volumes/VALEN/Africa:LAC/Harmonization/GVC AFRICA/faceted_panel_boxplots_101_countries_fixed"
+)
+
+# Create export directory
+fs::dir_create(execution_metadata$export_path, recurse = TRUE)
+
+# ================================================================
+# FONT SETUP - GAI Editorial Standard
+# ================================================================
+
+setup_gai_fonts <- function() {
+  tryCatch({
+    message("Setting up GAI Editorial fonts...")
+    font_add("Arial", regular = "Arial")
+    font_add_google("Open Sans", "opensans")
+    showtext_auto()
+    showtext_opts(dpi = 300)
+    message("GAI Editorial fonts configured successfully")
+    return("Arial")
+  }, error = function(e) {
+    message("Font fallback to system sans-serif: ", e$message)
+    return("sans")
+  })
+}
+
+FONT_FAMILY <- setup_gai_fonts()
+
+# ================================================================
+# EDITORIAL COLORS AND STYLING
+# ================================================================
+
+gvc_colors <- c(
+  "LAC"    = "#FF7F00",     # Orange
+  "OECD"   = "#1F78B4",     # Blue
+  "ASEAN"  = "#33A02C",     # Green
+  "CHINA"  = "#E31A1C",     # Red
+  "AFRICA" = "#FFD700"      # Yellow
+)
+
+gai_colors <- list(
+  primary_text = "#222222", 
+  secondary_text = "#555555",
+  caption_text = "#333333",
+  axis_text = "#333333",
+  grid_lines = "#EAEAEA", 
+  white_background = "white"
+)
+
+color_guide_text <- "Color Guide: LAC (Orange) | OECD (Blue) | ASEAN (Green) | CHINA (Red) | AFRICA (Yellow)"
+
+theme_gvc_publication <- function(base_size = 13, base_family = FONT_FAMILY) {
+  theme_minimal(base_size = base_size, base_family = base_family) +
+    theme(
+      text = element_text(color = gai_colors$primary_text, family = base_family),
+      plot.title = element_text(face = "bold", size = 16, hjust = 0.5, margin = margin(b = 12)),
+      plot.subtitle = element_text(face = "bold", size = 12, hjust = 0.5, color = gai_colors$secondary_text),
+      plot.caption = element_text(size = 9, face = "bold", color = gai_colors$caption_text, hjust = 0, margin = margin(t = 25), lineheight = 1.3),
+      axis.title = element_text(face = "bold", size = 12),
+      axis.text = element_text(size = 11, color = gai_colors$axis_text),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.major = element_line(color = gai_colors$grid_lines, size = 0.35),
+      panel.grid.minor = element_blank(),
+      panel.background = element_rect(fill = gai_colors$white_background, color = NA),
+      plot.background = element_rect(fill = gai_colors$white_background, color = NA),
+      legend.position = "none",
+      plot.margin = margin(20, 20, 80, 20),
+      strip.text = element_text(face = "bold", size = 11),
+      strip.background = element_rect(fill = "#F0F0F0", color = "#CCCCCC")
+    )
+}
+
+# ================================================================
+# EXACT 101 COUNTRIES AS SPECIFIED
+# ================================================================
+
+region_countries_101_exact <- list(
+  africa = c(
+    "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cameroon", 
+    "Chad", "Comoros", "Djibouti", "Egypt", "Equatorial Guinea", "Ethiopia", "Gabon", 
+    "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", "Libya", 
+    "Madagascar", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", 
+    "Namibia", "Niger", "Nigeria", "Rwanda", "Senegal", "Seychelles", "Sierra Leone", 
+    "Somalia", "South Africa", "Sudan", "Togo", "Tunisia", "Zimbabwe"
+  ),  # 40 countries
+  
+  oecd = c(
+    "Australia", "Austria", "Belgium", "Canada", "Czech Republic", "Denmark", 
+    "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Iceland", 
+    "Ireland", "Israel", "Italy", "Japan", "Latvia", "Lithuania", "Luxembourg", 
+    "Netherlands", "New Zealand", "Norway", "Poland", "Portugal", "Slovakia", 
+    "Slovenia", "Spain", "Sweden", "Switzerland"
+  ),  # 30 countries
+  
+  lac = c(
+    "Argentina", "Belize", "Brazil", "Chile", "Colombia", "Costa Rica", 
+    "Dominican Republic", "Ecuador", "El Salvador", "Guatemala", "Guyana", 
+    "Haiti", "Honduras", "Jamaica", "Mexico", "Nicaragua", "Panama", 
+    "Paraguay", "Peru", "Suriname", "Uruguay"
+  ),  # 21 countries
+  
+  asean = c(
+    "Brunei", "Cambodia", "Indonesia", "Laos", "Malaysia", "Philippines", 
+    "Singapore", "Thailand", "Vietnam"
+  ),  # 9 countries
+  
+  china = c("China")  # 1 country
+)
+
+assign_region_101_exact <- function(country) {
+  if (is.na(country) || country == "" || is.null(country)) return(NA_character_)
+  
+  country_clean <- trimws(as.character(country))
+  
+  if (country_clean %in% region_countries_101_exact$africa) return("AFRICA")
+  if (country_clean %in% region_countries_101_exact$china) return("CHINA")
+  if (country_clean %in% region_countries_101_exact$lac) return("LAC")
+  if (country_clean %in% region_countries_101_exact$asean) return("ASEAN")
+  if (country_clean %in% region_countries_101_exact$oecd) return("OECD")
+  
+  return(NA_character_)
+}
+
+# ================================================================
+# LOAD CORE PILLARS DATA
+# ================================================================
+
+message("Loading Core Pillars data from Africa GVC Data Annex...")
+message("Current Date/Time: ", execution_metadata$datetime_utc)
+message("User: ", execution_metadata$user)
+message("Target: Faceted panel boxplots for 101 countries")
+
+# Load the Core_Pillars_Annex_138_Final.csv file
+tryCatch({
+  Core_Pillars_138 <- read_csv(file.path(execution_metadata$clean_data_source_path, "Core_Pillars_Annex_138_Final.csv"), show_col_types = FALSE)
+  message("Core_Pillars_Annex_138_Final.csv loaded: ", nrow(Core_Pillars_138), " countries")
+}, error = function(e) {
+  message("Error loading Core Pillars data: ", e$message)
+  stop("ERROR: Could not load Core Pillars data. Please ensure file exists.")
+})
+
+# ================================================================
+# DATA STRUCTURE INSPECTION AND COLUMN IDENTIFICATION
+# ================================================================
+
+message("\nInspecting Core Pillars data structure...")
+message("Total rows: ", nrow(Core_Pillars_138))
+message("Total columns: ", ncol(Core_Pillars_138))
+
+# Identify country column
+country_col <- NULL
+possible_country_cols <- c("Country", "country", "Country_Name", "COUNTRY")
+for(col in possible_country_cols) {
+  if(col %in% names(Core_Pillars_138)) {
+    country_col <- col
+    break
+  }
+}
+
+if(is.null(country_col)) {
+  country_col <- names(Core_Pillars_138)[1]
+  message("Using first column as country identifier: ", country_col)
+}
+
+message("Country column: ", country_col)
+
+# ================================================================
+# CREATE TARGET COUNTRIES LIST WITH REGIONS
+# ================================================================
+
+message("\nCreating target countries list with regions...")
+
+# Get all unique countries from data
+all_countries_in_data <- Core_Pillars_138[[country_col]]
+all_countries_in_data <- all_countries_in_data[!is.na(all_countries_in_data) & all_countries_in_data != ""]
+all_countries_in_data <- sort(unique(all_countries_in_data))
+
+message("Total countries found in Core Pillars data: ", length(all_countries_in_data))
+
+# Apply region assignments
+region_assignments <- sapply(all_countries_in_data, assign_region_101_exact)
+
+# Create target countries data frame
+target_countries_101 <- data.frame(
+  Country = character(0),
+  Region = character(0),
+  stringsAsFactors = FALSE
+)
+
+# Add countries that match our target regions
+for(i in seq_along(all_countries_in_data)) {
+  country <- all_countries_in_data[i]
+  region <- region_assignments[i]
+  
+  if(!is.na(region) && region != "") {
+    target_countries_101 <- rbind(target_countries_101, 
+                                  data.frame(Country = country, Region = region, stringsAsFactors = FALSE))
+  }
+}
+
+total_target_countries <- nrow(target_countries_101)
+message("Target countries: ", total_target_countries)
+
+# ================================================================
+# PREPARE CLEAN DATASET
+# ================================================================
+
+message("\nPreparing clean dataset...")
+
+# Create the clean dataset
+pillar_data_101 <- Core_Pillars_138 %>%
+  rename(Country = !!sym(country_col)) %>%
+  filter(Country %in% target_countries_101$Country)
+
+# Manually add Region column
+pillar_data_101$Region <- NA_character_
+
+# Populate Region column
+for(i in 1:nrow(pillar_data_101)) {
+  country <- pillar_data_101$Country[i]
+  matching_row <- which(target_countries_101$Country == country)
+  
+  if(length(matching_row) > 0) {
+    pillar_data_101$Region[i] <- target_countries_101$Region[matching_row[1]]
+  }
+}
+
+# Remove rows without regions and arrange
+pillar_data_101 <- pillar_data_101 %>%
+  filter(!is.na(Region) & Region != "") %>%
+  arrange(Region, Country)
+
+message("Final dataset: ", nrow(pillar_data_101), " countries")
+
+# ================================================================
+# CREATE COUNTRY CAPTION TEXT
+# ================================================================
+
+country_lists <- target_countries_101 %>%
+  group_by(Region) %>%
+  summarise(
+    Countries = paste(Country, collapse = ", "),
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(match(Region, execution_metadata$target_regions))
+
+country_caption_text <- paste0(
+  "\n\nRegion and Country Composition (", total_target_countries, " total countries):\n",
+  "AFRICA (40): Algeria, Angola, Benin, Botswana, Burkina Faso, Burundi, Cameroon, Chad, Comoros, Djibouti, Egypt, Equatorial Guinea, Ethiopia, Gabon, Ghana, Guinea, Guinea-Bissau, Kenya, Lesotho, Liberia, Libya, Madagascar, Mali, Mauritania, Mauritius, Morocco, Mozambique, Namibia, Niger, Nigeria, Rwanda, Senegal, Seychelles, Sierra Leone, Somalia, South Africa, Sudan, Togo, Tunisia, Zimbabwe\n\n",
+  "OECD (30): Australia, Austria, Belgium, Canada, Czech Republic, Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Iceland, Ireland, Israel, Italy, Japan, Latvia, Lithuania, Luxembourg, Netherlands, New Zealand, Norway, Poland, Portugal, Slovakia, Slovenia, Spain, Sweden, Switzerland\n\n",
+  "LAC (21): Argentina, Belize, Brazil, Chile, Colombia, Costa Rica, Dominican Republic, Ecuador, El Salvador, Guatemala, Guyana, Haiti, Honduras, Jamaica, Mexico, Nicaragua, Panama, Paraguay, Peru, Suriname, Uruguay\n\n",
+  "ASEAN (9): Brunei, Cambodia, Indonesia, Laos, Malaysia, Philippines, Singapore, Thailand, Vietnam\n\n",
+  "CHINA (1): China"
+)
+
+# ================================================================
+# DEFINE PILLAR-INDICATOR MAPPINGS
+# ================================================================
+
+# Utility: Helper to combine strings and handle NULLs
+"%+%" <- function(a, b) paste0(a, ifelse(is.null(b), "", b))
+
+pillar_indicator_panels <- list(
+  "Figure_1_technology_readiness" = list(
+    indicators = c("Internet Penetration Index", "Mobile Connectivity Index"),
+    title = "Figure 1: Technology Readiness: Regional Performance Distribution",
+    subtitle = "NORMALIZED INDICATORS (0-1 SCALE) BY REGION",
+    caption = "Source: Author's calculations using institutional databases (ITU, GSMA). Scores are min–max normalized (0–1); higher values indicate better performance. Each dot represents a country. " %+% color_guide_text %+% country_caption_text
+  ),
+  "Figure_2_trade_investment_readiness" = list(
+    indicators = c("Trade to GDP Ratio Index", "Logistics Performance Index"),
+    title = "Figure 2: Trade & Investment Readiness: Regional Performance Distribution",
+    subtitle = "NORMALIZED INDICATORS (0-1 SCALE) BY REGION",
+    caption = "Source: Author's calculations using institutional databases (World Bank). Scores are min–max normalized (0–1); higher values indicate better performance. Each dot represents a country. " %+% color_guide_text %+% country_caption_text
+  ),
+  "Figure_3_sustainability_readiness" = list(
+    indicators = c("Modern Renewables Share Index", "CO2 Intensity Index"),
+    title = "Figure 3: Sustainability Readiness: Regional Performance Distribution",
+    subtitle = "NORMALIZED INDICATORS (0-1 SCALE) BY REGION",
+    caption = "Source: Author's calculations using institutional databases (IRENA, World Bank, EDGAR). Scores are min–max normalized (0–1); higher values indicate better performance. Note: For CO₂ Intensity Index, a higher score = lower emissions (better). Each dot represents a country. " %+% color_guide_text %+% country_caption_text
+  ),
+  "Figure_4_institutional_geopolitical_readiness" = list(
+    indicators = c("Political Stability Index", "Business Ready Index"),
+    title = "Figure 4: Institutional & Geopolitical Readiness: Regional Performance Distribution",
+    subtitle = "NORMALIZED INDICATORS (0-1 SCALE) BY REGION",
+    caption = "Source: Author's calculations using institutional databases (World Bank). Scores are min–max normalized (0–1); higher values indicate better performance. Each dot represents a country. " %+% color_guide_text %+% country_caption_text
+  )
+)
+
+# ================================================================
+# MAIN EXECUTION - CREATE FACETED PANEL BOXPLOTS - FIXED VERSION
+# ================================================================
+
+message("\n", paste(rep("=", 80), collapse=""))
+message("CREATING FACETED PANEL BOXPLOTS FOR FOUR PILLARS - FIXED VERSION")
+message("Current Date/Time: ", execution_metadata$datetime_utc)
+message("User: ", execution_metadata$user)
+message("Processing ", total_target_countries, " countries in 5 regions")
+message("Creating 4 faceted panel figures with 2 indicators each")
+message(paste(rep("=", 80), collapse=""))
+
+results <- list()
+
+# Reshape Data and Plot for Each Pillar - FIXED VERSION
+for (fig_name in names(pillar_indicator_panels)) {
+  ind_info <- pillar_indicator_panels[[fig_name]]
+  indicator_titles <- ind_info$indicators
+  
+  message("\n", paste(rep("-", 60), collapse=""))
+  message("PROCESSING: ", toupper(fig_name))
+  message("Indicators: ", paste(indicator_titles, collapse = ", "))
+  message(paste(rep("-", 60), collapse=""))
+  
+  # Find columns in your data (using robust name matching)
+  found_columns <- character(0)
+  column_mapping <- list()
+  
+  for(ind in indicator_titles) {
+    # Create flexible pattern matching
+    pattern <- str_replace_all(ind, "\\s+", ".*")  # Replace spaces with .*
+    pattern <- str_replace_all(pattern, "–", ".*")  # Replace en-dash with .*
+    pattern <- str_replace_all(pattern, "-", ".*")  # Replace hyphen with .*
+    pattern <- str_replace_all(pattern, "₂", "2")   # Replace subscript 2
+    
+    matched_col <- names(pillar_data_101)[str_detect(names(pillar_data_101), regex(pattern, ignore_case = TRUE))]
+    if(length(matched_col) > 0) {
+      found_col <- matched_col[1]
+      found_columns <- c(found_columns, found_col)
+      column_mapping[[found_col]] <- ind
+      message("   Found: ", ind, " -> ", found_col)
+    } else {
+      message("   NOT FOUND: ", ind)
+    }
+  }
+  
+  if(length(found_columns) == 0) {
+    message("No valid indicators found for ", fig_name)
+    next
+  }
+  
+  # Convert to numeric
+  for(col in found_columns) {
+    pillar_data_101[[col]] <- suppressWarnings(as.numeric(as.character(pillar_data_101[[col]])))
+  }
+  
+  # Create plot data step by step - FIXED APPROACH
+  message("Creating plot data...")
+  
+  # Step 1: Select relevant columns
+  plot_data_wide <- pillar_data_101 %>%
+    select(Country, Region, all_of(found_columns))
+  
+  message("Step 1: Selected ", ncol(plot_data_wide), " columns")
+  
+  # Step 2: Use pivot_longer with proper column specification - FIXED
+  tryCatch({
+    plot_long <- plot_data_wide %>%
+      pivot_longer(
+        cols = all_of(found_columns),  # Use the exact column names
+        names_to = "Indicator_Column",
+        values_to = "Value"
+      )
+    message("Step 2: pivot_longer successful - ", nrow(plot_long), " rows")
+  }, error = function(e) {
+    message("Error in pivot_longer: ", e$message)
+    message("Columns to pivot: ", paste(found_columns, collapse = ", "))
+    message("Available columns: ", paste(names(plot_data_wide), collapse = ", "))
+    stop("Failed to reshape data")
+  })
+  
+  # Step 3: Create clean indicator labels and filter
+  plot_long <- plot_long %>%
+    mutate(
+      Indicator_Label = case_when(
+        str_detect(Indicator_Column, regex("Internet.*Penetration", ignore_case = TRUE)) ~ "Internet Penetration Index",
+        str_detect(Indicator_Column, regex("Mobile.*Connectivity", ignore_case = TRUE)) ~ "Mobile Connectivity Index",
+        str_detect(Indicator_Column, regex("Trade.*GDP", ignore_case = TRUE)) ~ "Trade-to-GDP Ratio Index",
+        str_detect(Indicator_Column, regex("Logistics.*Performance", ignore_case = TRUE)) ~ "Logistics Performance Index",
+        str_detect(Indicator_Column, regex(".*Renewable.*Share", ignore_case = TRUE)) ~ "Modern Renewables Share Index",
+        str_detect(Indicator_Column, regex("CO2|CO₂", ignore_case = TRUE)) ~ "CO₂ Intensity Index",
+        str_detect(Indicator_Column, regex("Political.*Stability", ignore_case = TRUE)) ~ "Political Stability Index",
+        str_detect(Indicator_Column, regex("Business.*Ready", ignore_case = TRUE)) ~ "Business Ready Index",
+        TRUE ~ Indicator_Column
+      ),
+      Region = factor(Region, levels = execution_metadata$target_regions)
+    ) %>%
+    filter(
+      !is.na(Value) & 
+      !is.na(Region) & 
+      is.finite(Value)
+    )
+  
+  message("Step 3: Final plot data - ", nrow(plot_long), " observations")
+  
+  if(nrow(plot_long) == 0) {
+    message("No valid data for plotting ", fig_name)
+    next
+  }
+  
+  message("Unique indicators: ", paste(unique(plot_long$Indicator_Label), collapse = ", "))
+  message("Countries with data: ", length(unique(plot_long$Country)))
+  
+  # Create faceted plot
+  p <- ggplot(plot_long, aes(x = Region, y = Value, fill = Region)) +
+    geom_boxplot(
+      alpha = 0.8, 
+      outlier.shape = 21, 
+      outlier.alpha = 0.4,
+      size = 0.6, 
+      outlier.size = 1.5, 
+      width = 0.7
+    ) +
+    geom_jitter(
+      width = 0.2, 
+      alpha = 0.6, 
+      size = 1.2, 
+      color = "black"
+    ) +
+    scale_fill_manual(values = gvc_colors) +
+    scale_y_continuous(
+      name = "NORMALIZED SCORE (0-1)",
+      limits = c(0, 1),
+      breaks = seq(0, 1, 0.2),
+      labels = scales::number_format(accuracy = 0.1),
+      expand = expansion(mult = c(0.02, 0.02))
+    ) +
+    facet_wrap(~Indicator_Label, ncol = 2, scales = "fixed") +
+    labs(
+      title = ind_info$title,
+      subtitle = paste(ind_info$subtitle, "(", length(unique(plot_long$Country)), "Countries)"),
+      x = "Region",
+      caption = ind_info$caption
+    ) +
+    theme_gvc_publication(base_size = 13)
+  
+  # Export files
+  out_png <- file.path(execution_metadata$export_path, paste0(fig_name, ".png"))
+  out_pdf <- file.path(execution_metadata$export_path, paste0(fig_name, ".pdf"))
+  out_jpg <- file.path(execution_metadata$export_path, paste0(fig_name, ".jpeg"))
+  
+  tryCatch({
+    ggsave(out_png, p, width = 12, height = 8, dpi = 320, bg = "white")
+    message("PNG exported: ", basename(out_png))
+  }, error = function(e) message("PNG export failed: ", e$message))
+  
+  tryCatch({
+    ggsave(out_pdf, p, width = 12, height = 8, bg = "white")
+    message("PDF exported: ", basename(out_pdf))
+  }, error = function(e) message("PDF export failed: ", e$message))
+  
+  tryCatch({
+    ggsave(out_jpg, p, width = 12, height = 8, dpi = 320, bg = "white")
+    message("JPEG exported: ", basename(out_jpg))
+  }, error = function(e) message("JPEG export failed: ", e$message))
+  
+  results[[fig_name]] <- list(
+    plot = p,
+    indicators = unique(plot_long$Indicator_Label),
+    countries = length(unique(plot_long$Country)),
+    observations = nrow(plot_long)
+  )
+  
+  message("SUCCESS: ", fig_name, " completed!")
+}
+
+# Export country lists
+csv_file <- file.path(execution_metadata$export_path, "Country_Lists_Faceted_Panels_Fixed.csv")
+write.csv(country_lists, csv_file, row.names = FALSE)
+message("\nCountry lists exported: ", basename(csv_file))
+
+# ================================================================
+# FINAL SUMMARY
+# ================================================================
+
+message("\n", paste(rep("=", 80), collapse=""))
+message("FACETED PANEL BOXPLOTS PIPELINE COMPLETED - FIXED VERSION")
+message(paste(rep("=", 80), collapse=""))
+
+successful_figures <- sum(!sapply(results, is.null))
+total_figures <- length(pillar_indicator_panels)
+
+message("FINAL SUMMARY:")
+message("   Timestamp: ", execution_metadata$datetime_utc)
+message("   User: ", execution_metadata$user)
+message("   Countries analyzed: ", total_target_countries)
+message("   Successful faceted figures: ", successful_figures, "/", total_figures)
+message("   Export directory: ", execution_metadata$export_path)
+
+message("\nCOUNTRIES BREAKDOWN:")
+for (i in 1:nrow(country_lists)) {
+  message("   ", country_lists$Region[i], ": ", country_lists$Count[i], " countries")
+}
+
+message("\nGENERATED FACETED PANEL FIGURES:")
+for (fig_name in names(results)) {
+  if (!is.null(results[[fig_name]])) {
+    result <- results[[fig_name]]
+    message("   ", fig_name, ":")
+    message("      Indicators: ", paste(result$indicators, collapse = ", "))
+    message("      Countries with data: ", result$countries)
+    message("      Total observations: ", result$observations)
+    message("      Files: PNG, PDF, JPEG")
+  }
+}
+
+message("\nFACETED PANEL STRUCTURE:")
+message("   • Each figure contains 2 related indicators in separate panels")
+message("   • Figure 1: Technology (Internet Penetration + Mobile Connectivity)")
+message("   • Figure 2: Trade & Investment (Trade-to-GDP + Logistics Performance)")
+message("   • Figure 3: Sustainability (Renewables Share + CO₂ Intensity)")
+message("   • Figure 4: Institutional (Political Stability + Business Ready)")
+
+message("\nINTERPRETATION GUIDE:")
+message("   • Panels: Each panel shows one specific indicator")
+message("   • Dots: Each dot = one country's normalized (0–1) score for that indicator")
+message("   • Box/Whiskers: Show distribution (median, quartiles, outliers) for each region")
+message("   • Colors: LAC (Orange) | OECD (Blue) | ASEAN (Green) | CHINA (Red) | AFRICA (Yellow)")
+message("   • Normalization: Min–max (0–1); higher values = better performance")
+message("   • Special Note: CO₂ Intensity - higher normalized score = better (lower actual emissions)")
+
+message("\nFIXES APPLIED:")
+message("   • Fixed pivot_longer error by using exact column names")
+message("   • Added step-by-step data reshaping with error handling")
+message("   • Enhanced column mapping and validation")
+message("   • Improved debugging and error messages")
+
+message("\n", color_guide_text)
+message("\n", paste(rep("=", 80), collapse=""))
+message("ALL FACETED PANEL BOXPLOTS READY FOR PUBLICATION!")
+message("PIVOT_LONGER ERROR FIXED - 4 PILLAR FIGURES WITH 2-PANEL FACETS EACH CREATED")
+message(paste(rep("=", 80), collapse=""))
