@@ -559,3 +559,1080 @@ message("\n", paste(rep("=", 80), collapse=""))
 message("ALL FACETED PANEL BOXPLOTS READY FOR PUBLICATION!")
 message("PIVOT_LONGER ERROR FIXED - 4 PILLAR FIGURES WITH 2-PANEL FACETS EACH CREATED")
 message(paste(rep("=", 80), collapse=""))
+
+
+
+
+
+
+######################################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ================================================================
+# WTO/ADB/GAI Editorial Style - COMPLETE GVC AFRICA PIPELINE
+# Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-06 12:56:20
+# Current User's Login: Canomoncada
+# Version: GVC_AFRICA_COMPLETE_PIPELINE_v1.3_TOP_PERFORMERS
+# ================================================================
+
+# Load required packages
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(showtext)
+library(scales)
+library(stringr)
+library(fs)
+library(openxlsx)
+
+# ================================================================
+# EXECUTION METADATA WITH UPDATED TIMESTAMP
+# ================================================================
+
+execution_metadata <- list(
+  datetime_utc = "2025-06-06 12:56:20",
+  user = "Canomoncada",
+  version = "GVC_AFRICA_COMPLETE_PIPELINE_v1.3_TOP_PERFORMERS",
+  target_countries = "101_five_regions_exact",
+  target_regions = c("AFRICA", "OECD", "CHINA", "LAC", "ASEAN"),
+  data_year = "2023",
+  style = "WTO/ADB/GAI Editorial Standard - Complete Pipeline with Top Performer Highlighting",
+  clean_data_source_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex",
+  export_path = "/Volumes/VALEN/Africa:LAC/Harmonization/GVC AFRICA"
+)
+
+# Create export directories
+fs::dir_create(execution_metadata$export_path, recurse = TRUE)
+fs::dir_create(file.path(execution_metadata$export_path, "figures"), recurse = TRUE)
+fs::dir_create(file.path(execution_metadata$export_path, "ranking_tables"), recurse = TRUE)
+
+message("Export directories created/verified:")
+message("  Main: ", execution_metadata$export_path)
+message("  Figures: ", file.path(execution_metadata$export_path, "figures"))
+message("  Rankings: ", file.path(execution_metadata$export_path, "ranking_tables"))
+
+# ================================================================
+# FONT SETUP - GAI Editorial Standard
+# ================================================================
+
+setup_gai_fonts <- function() {
+  tryCatch({
+    message("Setting up GAI Editorial fonts...")
+    font_add("Arial", regular = "Arial")
+    font_add_google("Open Sans", "opensans")
+    showtext_auto()
+    showtext_opts(dpi = 320)
+    message("GAI Editorial fonts configured successfully")
+    return("Arial")
+  }, error = function(e) {
+    message("Font fallback to system sans-serif: ", e$message)
+    return("sans")
+  })
+}
+
+FONT_FAMILY <- setup_gai_fonts()
+
+# ================================================================
+# EDITORIAL COLORS AND STYLING
+# ================================================================
+
+gvc_colors <- c(
+  "LAC"    = "#FF7F00",     # Orange
+  "OECD"   = "#1F78B4",     # Blue
+  "ASEAN"  = "#33A02C",     # Green
+  "CHINA"  = "#E31A1C",     # Red
+  "AFRICA" = "#FFD700"      # Yellow
+)
+
+# Excel regional colors
+excel_region_colors <- list(
+  "LAC" = "#FFB366",        # Orange
+  "OECD" = "#66B3FF",       # Blue
+  "ASEAN" = "#66CC66",      # Green
+  "CHINA" = "#FF6666",      # Red
+  "AFRICA" = "#FFD700",     # Yellow
+  "OTHER" = "#CCCCCC"       # Gray
+)
+
+gai_colors <- list(
+  primary_text = "#222222", 
+  secondary_text = "#555555",
+  caption_text = "#333333",
+  axis_text = "#333333",
+  grid_lines = "#EAEAEA", 
+  white_background = "white"
+)
+
+theme_gvc_faceted <- function(base_size = 12, base_family = FONT_FAMILY) {
+  theme_minimal(base_size = base_size, base_family = base_family) +
+    theme(
+      text = element_text(color = gai_colors$primary_text, family = base_family),
+      plot.title = element_text(face = "bold", size = 16, hjust = 0.5, margin = margin(b = 15)),
+      plot.subtitle = element_text(face = "bold", size = 12, hjust = 0.5, margin = margin(b = 10)),
+      plot.caption = element_text(size = 10, color = gai_colors$caption_text, hjust = 0, margin = margin(t = 20), lineheight = 1.3),
+      axis.title = element_text(face = "bold", size = 11),
+      axis.text = element_text(size = 10, color = gai_colors$axis_text),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.major = element_line(color = gai_colors$grid_lines, size = 0.3),
+      panel.grid.minor = element_blank(),
+      panel.background = element_rect(fill = gai_colors$white_background, color = NA),
+      plot.background = element_rect(fill = gai_colors$white_background, color = NA),
+      strip.text = element_text(face = "bold", size = 11),
+      strip.background = element_rect(fill = "grey95", color = "grey80"),
+      legend.position = "none",
+      plot.margin = margin(15, 15, 70, 15),
+      panel.spacing = unit(1, "lines")
+    )
+}
+
+# ================================================================
+# EXACT 101 COUNTRIES AS SPECIFIED
+# ================================================================
+
+region_countries_101_exact <- list(
+  africa = c(
+    "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cameroon", 
+    "Chad", "Comoros", "Djibouti", "Egypt", "Equatorial Guinea", "Ethiopia", "Gabon", 
+    "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", "Libya", 
+    "Madagascar", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", 
+    "Namibia", "Niger", "Nigeria", "Rwanda", "Senegal", "Seychelles", "Sierra Leone", 
+    "Somalia", "South Africa", "Sudan", "Togo", "Tunisia", "Zimbabwe"
+  ),  # 40 countries
+  
+  oecd = c(
+    "Australia", "Austria", "Belgium", "Canada", "Czech Republic", "Denmark", 
+    "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Iceland", 
+    "Ireland", "Israel", "Italy", "Japan", "Latvia", "Lithuania", "Luxembourg", 
+    "Netherlands", "New Zealand", "Norway", "Poland", "Portugal", "Slovakia", 
+    "Slovenia", "Spain", "Sweden", "Switzerland"
+  ),  # 30 countries
+  
+  lac = c(
+    "Argentina", "Belize", "Brazil", "Chile", "Colombia", "Costa Rica", 
+    "Dominican Republic", "Ecuador", "El Salvador", "Guatemala", "Guyana", 
+    "Haiti", "Honduras", "Jamaica", "Mexico", "Nicaragua", "Panama", 
+    "Paraguay", "Peru", "Suriname", "Uruguay"
+  ),  # 21 countries
+  
+  asean = c(
+    "Brunei", "Cambodia", "Indonesia", "Laos", "Malaysia", "Philippines", 
+    "Singapore", "Thailand", "Vietnam"
+  ),  # 9 countries
+  
+  china = c("China")  # 1 country
+)
+
+# Enhanced region assignment function
+assign_region_101_exact <- function(country) {
+  if (is.na(country) || country == "" || is.null(country)) return(NA_character_)
+  
+  country_clean <- trimws(as.character(country))
+  
+  # Direct match first
+  if (country_clean %in% region_countries_101_exact$africa) return("AFRICA")
+  if (country_clean %in% region_countries_101_exact$china) return("CHINA")
+  if (country_clean %in% region_countries_101_exact$lac) return("LAC")
+  if (country_clean %in% region_countries_101_exact$asean) return("ASEAN")
+  if (country_clean %in% region_countries_101_exact$oecd) return("OECD")
+  
+  # Handle common variations
+  country_variations <- list(
+    "Czech Republic" = c("Czechia", "Czech Rep.", "Czech"),
+    "Guinea-Bissau" = c("Guinea Bissau"),
+    "South Africa" = c("South Africa, Rep.", "Republic of South Africa"),
+    "Dominican Republic" = c("Dominican Rep."),
+    "New Zealand" = c("New Zealand")
+  )
+  
+  for (standard_name in names(country_variations)) {
+    if (country_clean %in% country_variations[[standard_name]]) {
+      return(assign_region_101_exact(standard_name))
+    }
+  }
+  
+  return(NA_character_)
+}
+
+# ================================================================
+# CORE INDICATORS MAPPING
+# ================================================================
+
+core_indicators_mapping <- list(
+  "Internet Penetration Index" = c("Internet_Penetration_Index", "internet_penetration", "Internet_Penetration", 
+                                   "internet_users", "Internet_Users_Index", "Internet.Penetration.Index"),
+  "Mobile Connectivity Index" = c("Mobile_Connectivity_Index", "mobile_connectivity", "Mobile_Connectivity",
+                                  "mobile_subscriptions", "Mobile_Subscriptions_Index", "Mobile.Connectivity.Index"),
+  "Trade to GDP Ratio Index" = c("Trade_to_GDP_Ratio_Index", "trade_gdp_ratio", "Trade_GDP_Ratio",
+                                 "trade_openness", "Trade_Openness_Index", "Trade.to.GDP.Ratio.Index"),
+  "Logistics Performance Index" = c("Logistics_Performance_Index", "logistics_performance", "LPI",
+                                    "logistics_index", "Logistics_Index", "Logistics.Performance.Index"),
+  "Modern Renewables Share Index" = c("Modern_Renewables_Share_Index", "renewables_share", "Renewables_Share",
+                                      "renewable_energy", "Renewable_Energy_Index", "Modern.Renewables.Share.Index"),
+  "CO2 Intensity Index" = c("CO2_Intensity_Index", "co2_intensity", "CO2_Intensity",
+                            "carbon_intensity", "Carbon_Intensity_Index", "CO2.Intensity.Index"),
+  "Political Stability Index" = c("Political_Stability_Index", "political_stability", "Political_Stability",
+                                  "governance", "Governance_Index", "Political.Stability.Index"),
+  "Business Ready Index" = c("Business_Ready_Index", "business_ready", "Business_Ready",
+                             "ease_business", "Ease_of_Business_Index", "Business.Ready.Index")
+)
+
+# ================================================================
+# LOAD CORE PILLARS DATA
+# ================================================================
+
+message("\n", paste(rep("=", 80), collapse=""))
+message("LOADING CORE PILLARS DATA - COMPLETE PIPELINE v1.3 TOP PERFORMERS")
+message("Current Date/Time: ", execution_metadata$datetime_utc)
+message("User: ", execution_metadata$user)
+message("Target: 8 Core Indicators for 101 countries")
+message("Export Path: ", execution_metadata$export_path)
+message(paste(rep("=", 80), collapse=""))
+
+# Load the Core_Pillars_Annex_138_Final.csv file
+tryCatch({
+  Core_Pillars_138 <- read_csv(
+    file.path(execution_metadata$clean_data_source_path, "Core_Pillars_Annex_138_Final.csv"), 
+    show_col_types = FALSE
+  )
+  message("Core_Pillars_Annex_138_Final.csv loaded: ", nrow(Core_Pillars_138), " total countries")
+}, error = function(e) {
+  message("Error loading Core Pillars data: ", e$message)
+  stop("ERROR: Could not load Core Pillars data. Please ensure file exists.")
+})
+
+# Display column names for debugging
+message("\nAvailable columns in dataset (first 20):")
+column_names <- names(Core_Pillars_138)
+for(i in 1:min(length(column_names), 20)) {
+  message("  ", i, ": ", column_names[i])
+}
+if(length(column_names) > 20) {
+  message("  ... and ", length(column_names) - 20, " more columns")
+}
+
+# Identify country column
+country_col <- NULL
+possible_country_cols <- c("Country", "country", "Country_Name", "COUNTRY")
+for(col in possible_country_cols) {
+  if(col %in% names(Core_Pillars_138)) {
+    country_col <- col
+    break
+  }
+}
+
+if(is.null(country_col)) {
+  country_col <- names(Core_Pillars_138)[1]
+  message("Using first column as country identifier: ", country_col)
+} else {
+  message("Country column identified: ", country_col)
+}
+
+# ================================================================
+# IDENTIFY AND MAP CORE INDICATORS
+# ================================================================
+
+message("\nIdentifying core indicators...")
+
+# Function to find column by multiple possible names
+find_indicator_column <- function(data, indicator_name, possible_names) {
+  # First try exact matches
+  for (name in possible_names) {
+    if (name %in% names(data)) {
+      message("Found ", indicator_name, ": ", name)
+      return(name)
+    }
+  }
+  
+  # Try partial matching with case insensitive
+  for (name in possible_names) {
+    matches <- names(data)[str_detect(names(data), regex(name, ignore_case = TRUE))]
+    if (length(matches) > 0) {
+      message("Found ", indicator_name, " (partial match): ", matches[1])
+      return(matches[1])
+    }
+  }
+  
+  # Try pattern matching for key terms
+  key_terms <- list(
+    "Internet Penetration Index" = c("internet", "penetration"),
+    "Mobile Connectivity Index" = c("mobile", "connectivity"),
+    "Trade to GDP Ratio Index" = c("trade", "gdp"),
+    "Logistics Performance Index" = c("logistics", "performance", "lpi"),
+    "Modern Renewables Share Index" = c("renewable", "renewables"),
+    "CO2 Intensity Index" = c("co2", "carbon", "intensity"),
+    "Political Stability Index" = c("political", "stability"),
+    "Business Ready Index" = c("business", "ready", "ease")
+  )
+  
+  if (indicator_name %in% names(key_terms)) {
+    terms <- key_terms[[indicator_name]]
+    for (term in terms) {
+      matches <- names(data)[str_detect(names(data), regex(term, ignore_case = TRUE))]
+      if (length(matches) > 0) {
+        message("Found ", indicator_name, " (keyword match): ", matches[1])
+        return(matches[1])
+      }
+    }
+  }
+  
+  message("WARNING: ", indicator_name, " not found")
+  return(NULL)
+}
+
+# Map all core indicators
+indicator_columns <- list()
+for (indicator_name in names(core_indicators_mapping)) {
+  possible_names <- core_indicators_mapping[[indicator_name]]
+  found_column <- find_indicator_column(Core_Pillars_138, indicator_name, possible_names)
+  if (!is.null(found_column)) {
+    indicator_columns[[indicator_name]] <- found_column
+  }
+}
+
+message("\nCore indicators mapping results:")
+for (indicator_name in names(core_indicators_mapping)) {
+  if (indicator_name %in% names(indicator_columns)) {
+    message("✓ ", indicator_name, " -> ", indicator_columns[[indicator_name]])
+  } else {
+    message("✗ ", indicator_name, " -> NOT FOUND")
+  }
+}
+
+# ================================================================
+# PREPARE CLEAN DATASET
+# ================================================================
+
+message("\nPreparing clean dataset for target countries...")
+
+# Create clean pillar data
+pillar_data_clean <- Core_Pillars_138 %>%
+  rename(Country = !!sym(country_col)) %>%
+  mutate(Country = trimws(as.character(Country))) %>%
+  mutate(Region = sapply(Country, assign_region_101_exact)) %>%
+  filter(!is.na(Region) & Region != "") %>%
+  arrange(Region, Country)
+
+message("Clean dataset prepared: ", nrow(pillar_data_clean), " countries")
+
+# Verify region distribution
+region_breakdown <- pillar_data_clean %>%
+  count(Region, name = "Count") %>%
+  arrange(match(Region, execution_metadata$target_regions))
+
+message("\nRegion breakdown:")
+print(region_breakdown)
+
+# Add normalized versions of indicators
+normalized_indicators <- list()
+
+for (indicator_name in names(indicator_columns)) {
+  col_name <- indicator_columns[[indicator_name]]
+  if (col_name %in% names(pillar_data_clean)) {
+    # Convert to numeric
+    pillar_data_clean[[col_name]] <- as.numeric(pillar_data_clean[[col_name]])
+    
+    # Min-max normalization (0-1)
+    values <- pillar_data_clean[[col_name]]
+    valid_values <- values[!is.na(values) & is.finite(values)]
+    
+    if (length(valid_values) > 0) {
+      min_val <- min(valid_values)
+      max_val <- max(valid_values)
+      
+      if (max_val > min_val) {
+        normalized_values <- (values - min_val) / (max_val - min_val)
+        normalized_col_name <- paste0(col_name, "_Normalized")
+        pillar_data_clean[[normalized_col_name]] <- normalized_values
+        normalized_indicators[[indicator_name]] <- normalized_col_name
+        message("Normalized ", indicator_name, ": range [", round(min_val, 3), ", ", round(max_val, 3), "]")
+      } else {
+        pillar_data_clean[[paste0(col_name, "_Normalized")]] <- values
+        normalized_indicators[[indicator_name]] <- paste0(col_name, "_Normalized")
+        message("WARNING: ", indicator_name, " has constant values")
+      }
+    } else {
+      message("WARNING: No valid values for ", indicator_name)
+    }
+  } else {
+    message("ERROR: Column ", col_name, " not found in data")
+  }
+}
+
+# ================================================================
+# CREATE COUNTRY LISTS CSV
+# ================================================================
+
+message("\nCreating country lists CSV...")
+
+country_lists_csv <- pillar_data_clean %>%
+  select(Country, Region) %>%
+  distinct() %>%
+  group_by(Region) %>%
+  summarise(
+    Countries = paste(sort(Country), collapse = ", "),
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(match(Region, execution_metadata$target_regions))
+
+# Export country lists
+country_csv_file <- file.path(execution_metadata$export_path, "Country_Lists_Complete_Pipeline.csv")
+write_csv(country_lists_csv, country_csv_file)
+message("Country lists exported: ", basename(country_csv_file))
+
+# ================================================================
+# ENHANCED FACETED BOXPLOT CREATION FUNCTION WITH TOP PERFORMER HIGHLIGHTING
+# ================================================================
+
+create_faceted_boxplot <- function(data, indicators, figure_title, figure_num, caption_text, filename_base) {
+  message("\n--- Creating ", figure_title, " with TOP PERFORMER HIGHLIGHTING ---")
+  
+  if (length(indicators) != 2) {
+    message("ERROR: Exactly 2 indicators required for faceted plot")
+    return(NULL)
+  }
+  
+  # Check if both indicators are available
+  available_indicators <- indicators[!sapply(indicators, is.null)]
+  if (length(available_indicators) != 2) {
+    message("ERROR: Not enough valid indicators for ", figure_title)
+    message("Available: ", paste(names(available_indicators), collapse = ", "))
+    return(NULL)
+  }
+  
+  # Prepare data for plotting
+  plot_data_list <- list()
+  
+  for (i in 1:2) {
+    indicator_name <- names(available_indicators)[i]
+    col_name <- available_indicators[[i]]
+    
+    if (col_name %in% names(data)) {
+      temp_data <- data %>%
+        filter(!is.na(.data[[col_name]]), is.finite(.data[[col_name]])) %>%
+        mutate(
+          Region = factor(Region, levels = execution_metadata$target_regions),
+          Score = .data[[col_name]],
+          Indicator = indicator_name,
+          Panel = paste("Panel", i, ":", indicator_name)
+        ) %>%
+        select(Country, Region, Score, Indicator, Panel)
+      
+      plot_data_list[[i]] <- temp_data
+      message("Panel ", i, " (", indicator_name, "): ", nrow(temp_data), " countries")
+    } else {
+      message("ERROR: Column ", col_name, " not found in data")
+      return(NULL)
+    }
+  }
+  
+  # Combine data
+  plot_data <- bind_rows(plot_data_list)
+  
+  if (nrow(plot_data) == 0) {
+    message("ERROR: No valid data for plotting")
+    return(NULL)
+  }
+  
+  # ENHANCED: Add top performer flag for each region-indicator combination
+  plot_data <- plot_data %>%
+    group_by(Region, Indicator) %>%
+    mutate(is_top = Score == max(Score, na.rm = TRUE)) %>%
+    ungroup()
+  
+  # Count top performers for verification
+  top_performers <- plot_data %>%
+    filter(is_top) %>%
+    group_by(Indicator, Region) %>%
+    summarise(
+      top_countries = paste(Country, collapse = ", "),
+      top_score = round(first(Score), 3),
+      .groups = "drop"
+    )
+  
+  message("Top performers identified:")
+  for (i in 1:nrow(top_performers)) {
+    message("  ", top_performers$Indicator[i], " - ", top_performers$Region[i], ": ", 
+            top_performers$top_countries[i], " (", top_performers$top_score[i], ")")
+  }
+  
+  # Clean caption text - replace en dash with regular dash to avoid Unicode warnings
+  clean_caption <- str_replace_all(caption_text, "–", "-")
+  
+  # ENHANCED: Create the faceted plot with top performer highlighting
+  suppressWarnings({
+    p <- ggplot(plot_data, aes(x = Region, y = Score)) +
+      # Boxplots with regional fill colors
+      geom_boxplot(
+        aes(fill = Region),
+        alpha = 0.8, 
+        width = 0.7, 
+        outlier.shape = NA  # Prevent default outliers from showing
+      ) +
+      # All points as black circles (except top performers)
+      geom_jitter(
+        data = subset(plot_data, !is_top),
+        aes(x = Region, y = Score),
+        width = 0.2, alpha = 0.6, size = 1.6, color = "black"
+      ) +
+      # Top performer points as colored circles with black border
+      geom_jitter(
+        data = subset(plot_data, is_top),
+        aes(x = Region, y = Score, fill = Region),
+        width = 0.2, size = 2.4, color = "black", shape = 21
+      ) +
+      scale_fill_manual(values = gvc_colors) +
+      scale_y_continuous(
+        name = "NORMALIZED SCORE (0-1)",
+        limits = c(0, 1),
+        breaks = seq(0, 1, 0.2),
+        labels = scales::number_format(accuracy = 0.1),
+        expand = expansion(mult = c(0.02, 0.02))
+      ) +
+      scale_x_discrete(name = NULL) +
+      facet_wrap(~ Indicator, ncol = 2, scales = "free_x") +
+      labs(
+        title = paste("Figure", figure_num, ":", figure_title),
+        subtitle = "NORMALIZED INDICATORS (0-1 SCALE) BY REGION",
+        caption = clean_caption
+      ) +
+      theme_gvc_faceted()
+  })
+  
+  message("Enhanced faceted plot with top performer highlighting created successfully")
+  return(list(plot = p, filename = filename_base))
+}
+
+# ================================================================
+# RANKING TABLE CREATION FUNCTION
+# ================================================================
+
+create_complete_ranking_table <- function(df, pillar_name, table_number) {
+  message("\nCreating COMPLETE ranking table for ", pillar_name, " - ALL COUNTRIES RANKED...")
+  
+  indicator_cols <- setdiff(names(df), c("Country", "Region"))
+  
+  if (length(indicator_cols) == 0) {
+    message("No indicators found")
+    return(NULL)
+  }
+  
+  message("  Processing ", length(indicator_cols), " indicators for COMPLETE ranking")
+  
+  # Create ranking table with ALL countries
+  num_countries <- nrow(df)
+  ranking_table <- data.frame(
+    Rank = 1:num_countries,
+    stringsAsFactors = FALSE
+  )
+  
+  # Process each indicator with COMPLETE ranking (including NAs)
+  for (indicator in indicator_cols) {
+    message("  Processing indicator: ", indicator)
+    
+    # Create ranking data INCLUDING countries with NA values
+    ranking_data_with_na <- df %>%
+      select(Country, Region, !!sym(indicator)) %>%
+      mutate(
+        indicator_value = as.numeric(!!sym(indicator)),
+        has_valid_data = !is.na(indicator_value) & is.finite(indicator_value)
+      )
+    
+    # Separate countries with data and countries with NA
+    countries_with_data <- ranking_data_with_na %>%
+      filter(has_valid_data) %>%
+      arrange(desc(indicator_value)) %>%  # Higher values = better ranks
+      mutate(rank_position = row_number())
+    
+    countries_with_na <- ranking_data_with_na %>%
+      filter(!has_valid_data) %>%
+      arrange(Country)  # Sort alphabetically for consistency
+    
+    message("    Countries with data: ", nrow(countries_with_data))
+    message("    Countries with NA: ", nrow(countries_with_na))
+    
+    # Initialize vectors for ALL countries
+    country_vector <- rep(NA_character_, num_countries)
+    region_vector <- rep(NA_character_, num_countries)
+    
+    # Fill ranking positions for countries WITH data (ranks 1 to n)
+    if (nrow(countries_with_data) > 0) {
+      for (i in 1:nrow(countries_with_data)) {
+        rank_val <- countries_with_data$rank_position[i]
+        if (rank_val >= 1 && rank_val <= num_countries) {
+          country_vector[rank_val] <- countries_with_data$Country[i]
+          region_vector[rank_val] <- countries_with_data$Region[i]
+        }
+      }
+    }
+    
+    # Fill remaining positions with countries with NA (ranked lowest)
+    if (nrow(countries_with_na) > 0) {
+      start_rank <- nrow(countries_with_data) + 1
+      for (i in 1:nrow(countries_with_na)) {
+        rank_val <- start_rank + i - 1
+        if (rank_val <= num_countries) {
+          country_vector[rank_val] <- countries_with_na$Country[i]
+          region_vector[rank_val] <- countries_with_na$Region[i]
+        }
+      }
+    }
+    
+    # Add to ranking table
+    ranking_table[[indicator]] <- country_vector
+    ranking_table[[paste0(indicator, "_Region")]] <- region_vector
+    
+    countries_ranked_total <- sum(!is.na(country_vector))
+    message("    Total countries ranked: ", countries_ranked_total, "/", num_countries)
+  }
+  
+  message("COMPLETE ranking table: ", nrow(ranking_table), " ranks x ", length(indicator_cols), " indicators")
+  message("VERIFIED: ALL ", num_countries, " COUNTRIES RANKED (including NAs)")
+  
+  attr(ranking_table, "pillar_name") <- pillar_name
+  attr(ranking_table, "table_number") <- table_number
+  attr(ranking_table, "total_countries") <- num_countries
+  
+  return(ranking_table)
+}
+
+# ================================================================
+# EXCEL EXPORT WITH FIXED SHEET NAME LENGTH ISSUE
+# ================================================================
+
+export_ranking_table_excel <- function(ranking_table, pillar_name, table_number) {
+  if (is.null(ranking_table)) return(NULL)
+  
+  # Clean table (remove region columns for display)
+  clean_table <- ranking_table[, !str_detect(names(ranking_table), "_Region$")]
+  
+  # Get total countries
+  total_countries <- attr(ranking_table, "total_countries")
+  if (is.null(total_countries)) total_countries <- nrow(clean_table)
+  
+  # Create Excel file with export path
+  pillar_clean <- str_replace_all(tolower(pillar_name), " ", "_")
+  excel_file <- file.path(execution_metadata$export_path, "ranking_tables",
+                          paste0("Table_", table_number, "_", pillar_clean, "_RANKED_", 
+                                 str_replace_all(execution_metadata$datetime_utc, "[:-]", ""), ".xlsx"))
+  
+  wb <- createWorkbook()
+  
+  # FIXED: Create shortened sheet name to avoid 31-character limit
+  short_pillar_name <- switch(pillar_name,
+                              "Technology Readiness" = "Tech Rankings",
+                              "Trade & Investment Readiness" = "Trade Rankings", 
+                              "Sustainability Readiness" = "Sustain Rankings",
+                              "Institutional & Geopolitical Readiness" = "Instit Rankings",
+                              paste0("T", table_number, " Rankings"))  # Fallback
+  
+  sheet_name <- short_pillar_name
+  addWorksheet(wb, sheet_name)
+  
+  # Title and content
+  title_text <- paste("Table", table_number, ": Country Rankings on", 
+                      pillar_name, "Indicators")
+  subtitle_text <- paste("Rankings: 1 = highest performance - 2023 data (", 
+                         total_countries, "countries ranked)")
+  
+  # Metadata
+  metadata_text <- paste("Generated:", execution_metadata$datetime_utc, "UTC | User:", execution_metadata$user)
+  
+  # Write main content
+  writeData(wb, sheet_name, title_text, startRow = 1)
+  writeData(wb, sheet_name, subtitle_text, startRow = 2)
+  writeData(wb, sheet_name, metadata_text, startRow = 3)
+  writeData(wb, sheet_name, clean_table, startRow = 5)
+  
+  # Create styles
+  title_style <- createStyle(fontName = "Arial", fontSize = 14, 
+                             textDecoration = "bold", halign = "center")
+  subtitle_style <- createStyle(fontName = "Arial", fontSize = 11, 
+                                halign = "center", textDecoration = "italic")
+  metadata_style <- createStyle(fontName = "Arial", fontSize = 9, 
+                                halign = "center", fontColour = "gray")
+  header_style <- createStyle(fontName = "Arial", fontSize = 12, 
+                              fontColour = "white", fgFill = "#1F78B4", 
+                              textDecoration = "bold", halign = "center")
+  
+  # Gray NA style - DARKER for better visibility
+  gray_na_style <- createStyle(fgFill = "#A0A0A0", fontColour = "#FFFFFF", 
+                               textDecoration = "bold")
+  
+  # Apply basic styles
+  tryCatch({
+    addStyle(wb, sheet_name, title_style, rows = 1, cols = 1)
+    addStyle(wb, sheet_name, subtitle_style, rows = 2, cols = 1)
+    addStyle(wb, sheet_name, metadata_style, rows = 3, cols = 1)
+    addStyle(wb, sheet_name, header_style, rows = 5, cols = 1:ncol(clean_table))
+  }, error = function(e) {
+    message("Warning: Some styles may not have applied: ", e$message)
+  })
+  
+  # Apply regional colors and gray NAs
+  tryCatch({
+    for (i in 1:nrow(clean_table)) {
+      for (j in 2:ncol(clean_table)) {  # Skip Rank column
+        country <- clean_table[i, j]
+        if (is.na(country) || country == "" || country == "NA") {
+          # Apply DARK gray style for NAs/missing countries
+          addStyle(wb, sheet_name, gray_na_style, rows = i + 5, cols = j)
+        } else {
+          # Apply regional color for countries with data
+          region_col <- paste0(names(clean_table)[j], "_Region")
+          if (region_col %in% names(ranking_table)) {
+            region <- ranking_table[i, region_col]
+            if (!is.na(region) && region != "") {
+              region_color <- excel_region_colors[[region]]
+              if (!is.null(region_color)) {
+                region_style <- createStyle(fgFill = region_color)
+                addStyle(wb, sheet_name, region_style, rows = i + 5, cols = j)
+              }
+            }
+          }
+        }
+      }
+    }
+  }, error = function(e) {
+    message("Warning: Some colors may not have applied: ", e$message)
+  })
+  
+  # Set column widths
+  setColWidths(wb, sheet_name, cols = 1, widths = 8)
+  setColWidths(wb, sheet_name, cols = 2:ncol(clean_table), widths = 18)
+  
+  # Save workbook
+  saveWorkbook(wb, excel_file, overwrite = TRUE)
+  message("Ranking table exported: ", basename(excel_file))
+  
+  return(excel_file)
+}
+
+# ================================================================
+# EXPORT FUNCTION FOR MULTIPLE FORMATS WITH WARNING SUPPRESSION
+# ================================================================
+
+export_figure_multiple_formats <- function(plot_obj, width = 12, height = 8, dpi = 320) {
+  if (is.null(plot_obj) || is.null(plot_obj$plot)) {
+    message("No plot to export")
+    return(NULL)
+  }
+  
+  exported_files <- list()
+  plot <- plot_obj$plot
+  base_name <- plot_obj$filename
+  
+  # PNG export with warning suppression
+  png_file <- file.path(execution_metadata$export_path, "figures", paste0(base_name, ".png"))
+  tryCatch({
+    suppressWarnings({
+      ggsave(png_file, plot, width = width, height = height, dpi = dpi, bg = "white")
+    })
+    message("PNG exported: ", basename(png_file))
+    exported_files$png <- png_file
+  }, error = function(e) {
+    message("PNG export failed: ", e$message)
+  })
+  
+  # PDF export with warning suppression
+  pdf_file <- file.path(execution_metadata$export_path, "figures", paste0(base_name, ".pdf"))
+  tryCatch({
+    suppressWarnings({
+      ggsave(pdf_file, plot, width = width, height = height, bg = "white")
+    })
+    message("PDF exported: ", basename(pdf_file))
+    exported_files$pdf <- pdf_file
+  }, error = function(e) {
+    message("PDF export failed: ", e$message)
+  })
+  
+  # JPEG export with warning suppression
+  jpeg_file <- file.path(execution_metadata$export_path, "figures", paste0(base_name, ".jpeg"))
+  tryCatch({
+    suppressWarnings({
+      ggsave(jpeg_file, plot, width = width, height = height, dpi = dpi, bg = "white")
+    })
+    message("JPEG exported: ", basename(jpeg_file))
+    exported_files$jpeg <- jpeg_file
+  }, error = function(e) {
+    message("JPEG export failed: ", e$message)
+  })
+  
+  return(exported_files)
+}
+
+# ================================================================
+# DEFINE FIGURE SPECIFICATIONS WITH ENHANCED SOURCE TEXTS
+# ================================================================
+
+# Build figure specs dynamically based on available indicators
+figure_specs <- list()
+
+# Figure 1: Technology Readiness
+tech_indicators <- list(
+  "Internet Penetration Index" = NULL,
+  "Mobile Connectivity Index" = NULL
+)
+if ("Internet Penetration Index" %in% names(normalized_indicators)) {
+  tech_indicators[["Internet Penetration Index"]] <- normalized_indicators[["Internet Penetration Index"]]
+}
+if ("Mobile Connectivity Index" %in% names(normalized_indicators)) {
+  tech_indicators[["Mobile Connectivity Index"]] <- normalized_indicators[["Mobile Connectivity Index"]]
+}
+
+figure_specs[[1]] <- list(
+  title = "Technology Readiness",
+  figure_num = 1,
+  indicators = tech_indicators,
+  caption = "Source: Author's calculations using institutional databases (ITU, GSMA).\nScores are min-max normalized (0-1); higher values indicate better performance.\nBlack circles represent individual country scores; the colored circle indicates the top-performing country in each region for this indicator.",
+  filename = "Figure_1_technology_readiness"
+)
+
+# Figure 2: Trade & Investment Readiness
+trade_indicators <- list(
+  "Trade to GDP Ratio Index" = NULL,
+  "Logistics Performance Index" = NULL
+)
+if ("Trade to GDP Ratio Index" %in% names(normalized_indicators)) {
+  trade_indicators[["Trade to GDP Ratio Index"]] <- normalized_indicators[["Trade to GDP Ratio Index"]]
+}
+if ("Logistics Performance Index" %in% names(normalized_indicators)) {
+  trade_indicators[["Logistics Performance Index"]] <- normalized_indicators[["Logistics Performance Index"]]
+}
+
+figure_specs[[2]] <- list(
+  title = "Trade & Investment Readiness",
+  figure_num = 2,
+  indicators = trade_indicators,
+  caption = "Source: Author's calculations using institutional databases (World Bank).\nScores are min-max normalized (0-1); higher values indicate better performance.\nBlack circles represent individual country scores; the colored circle indicates the top-performing country in each region for this indicator.",
+  filename = "Figure_2_trade_investment_readiness"
+)
+
+# Figure 3: Sustainability Readiness
+sustain_indicators <- list(
+  "Modern Renewables Share Index" = NULL,
+  "CO2 Intensity Index" = NULL
+)
+if ("Modern Renewables Share Index" %in% names(normalized_indicators)) {
+  sustain_indicators[["Modern Renewables Share Index"]] <- normalized_indicators[["Modern Renewables Share Index"]]
+}
+if ("CO2 Intensity Index" %in% names(normalized_indicators)) {
+  sustain_indicators[["CO2 Intensity Index"]] <- normalized_indicators[["CO2 Intensity Index"]]
+}
+
+figure_specs[[3]] <- list(
+  title = "Sustainability Readiness",
+  figure_num = 3,
+  indicators = sustain_indicators,
+  caption = "Source: Author's calculations using institutional databases (IRENA, World Bank, EDGAR).\nScores are min-max normalized (0-1); higher values indicate better performance.\nNote: For CO2 Intensity Index, a higher score = lower emissions (better).\nBlack circles represent individual country scores; the colored circle indicates the top-performing country in each region for this indicator.",
+  filename = "Figure_3_sustainability_readiness"
+)
+
+# Figure 4: Institutional & Geopolitical Readiness
+institutional_indicators <- list(
+  "Political Stability Index" = NULL,
+  "Business Ready Index" = NULL
+)
+if ("Political Stability Index" %in% names(normalized_indicators)) {
+  institutional_indicators[["Political Stability Index"]] <- normalized_indicators[["Political Stability Index"]]
+}
+if ("Business Ready Index" %in% names(normalized_indicators)) {
+  institutional_indicators[["Business Ready Index"]] <- normalized_indicators[["Business Ready Index"]]
+}
+
+figure_specs[[4]] <- list(
+  title = "Institutional & Geopolitical Readiness",
+  figure_num = 4,
+  indicators = institutional_indicators,
+  caption = "Source: Author's calculations using institutional databases (World Bank).\nScores are min-max normalized (0-1); higher values indicate better performance.\nBlack circles represent individual country scores; the colored circle indicates the top-performing country in each region for this indicator.",
+  filename = "Figure_4_institutional_geopolitical_readiness"
+)
+
+# ================================================================
+# EXECUTE COMPLETE PIPELINE
+# ================================================================
+
+message("\n", paste(rep("=", 80), collapse=""))
+message("EXECUTING COMPLETE GVC AFRICA PIPELINE WITH TOP PERFORMER HIGHLIGHTING")
+message("Timestamp: ", execution_metadata$datetime_utc)
+message("Version: ", execution_metadata$version)
+message("Countries: ", nrow(pillar_data_clean))
+message("Export Path: ", execution_metadata$export_path)
+message(paste(rep("=", 80), collapse=""))
+
+# Initialize results storage
+all_exported_files <- list()
+all_ranking_tables <- list()
+
+# Process each figure specification
+for (i in 1:length(figure_specs)) {
+  spec <- figure_specs[[i]]
+  
+  message("\n", paste(rep("-", 60), collapse=""))
+  message("PROCESSING PILLAR ", i, "/", length(figure_specs), ": ", spec$title)
+  message("Figure: ", spec$figure_num, " | Table: ", i)
+  message("Indicators: ", paste(names(spec$indicators), collapse = ", "))
+  message(paste(rep("-", 60), collapse=""))
+  
+  # Filter out NULL indicators
+  valid_indicators <- spec$indicators[!sapply(spec$indicators, is.null)]
+  
+  if (length(valid_indicators) == 2) {
+    # Create faceted boxplot with top performer highlighting
+    plot_obj <- create_faceted_boxplot(
+      data = pillar_data_clean,
+      indicators = valid_indicators,
+      figure_title = spec$title,
+      figure_num = spec$figure_num,
+      caption_text = spec$caption,
+      filename_base = spec$filename
+    )
+    
+    if (!is.null(plot_obj)) {
+      exported_files <- export_figure_multiple_formats(plot_obj)
+      all_exported_files[[length(all_exported_files) + 1]] <- exported_files
+      message("SUCCESS: ", spec$title, " figure created and exported with top performer highlighting")
+      
+      # Create ranking table for the same indicators
+      # Prepare data with only the relevant normalized indicators
+      ranking_data <- pillar_data_clean %>%
+        select(Country, Region, all_of(unlist(valid_indicators)))
+      
+      # Create ranking table
+      ranking_table <- create_complete_ranking_table(ranking_data, spec$title, i)
+      
+      if (!is.null(ranking_table)) {
+        # Export ranking table to Excel
+        excel_file <- export_ranking_table_excel(ranking_table, spec$title, i)
+        all_ranking_tables[[spec$title]] <- list(
+          table = ranking_table,
+          excel_file = excel_file
+        )
+        message("SUCCESS: ", spec$title, " ranking table created and exported")
+      } else {
+        message("FAILED: ", spec$title, " ranking table could not be created")
+      }
+      
+    } else {
+      message("FAILED: ", spec$title, " figure could not be created")
+      all_exported_files[[length(all_exported_files) + 1]] <- NULL
+    }
+  } else {
+    message("SKIPPED: ", spec$title, " - insufficient valid indicators (", length(valid_indicators), "/2)")
+    all_exported_files[[length(all_exported_files) + 1]] <- NULL
+  }
+}
+
+# ================================================================
+# FINAL SUMMARY AND VALIDATION
+# ================================================================
+
+message("\n", paste(rep("=", 80), collapse=""))
+message("COMPLETE GVC AFRICA PIPELINE FINISHED - TOP PERFORMERS VERSION")
+message(paste(rep("=", 80), collapse=""))
+
+message("\nFINAL SUMMARY:")
+message("  Timestamp: ", execution_metadata$datetime_utc)
+message("  User: ", execution_metadata$user)
+message("  Version: ", execution_metadata$version)
+message("  Countries analyzed: ", nrow(pillar_data_clean))
+message("  Regions: ", paste(execution_metadata$target_regions, collapse = ", "))
+
+# Count successful outputs
+successful_figures <- sum(!sapply(all_exported_files, is.null))
+successful_rankings <- length(all_ranking_tables)
+
+message("  Figures created: ", successful_figures, "/", length(figure_specs))
+message("  Ranking tables created: ", successful_rankings, "/", length(figure_specs))
+
+message("\nENHANCED FEATURES:")
+message("✓ Y-axis label: 'NORMALIZED SCORE (0-1)'")
+message("✓ Subtitle: 'NORMALIZED INDICATORS (0-1 SCALE) BY REGION'")
+message("✓ Top performer highlighting: Colored circles with black borders")
+message("✓ Regular countries: Black circles")
+message("✓ Enhanced captions explaining dot color logic")
+message("✓ Top performer identification and logging")
+
+message("\nREGION SUMMARY:")
+final_region_summary <- pillar_data_clean %>%
+  group_by(Region) %>%
+  summarise(Countries = n(), .groups = "drop") %>%
+  arrange(match(Region, execution_metadata$target_regions))
+print(final_region_summary)
+
+message("\nEXPORTED FILES:")
+total_files <- 0
+
+# Count figure files
+for (i in 1:length(all_exported_files)) {
+  files <- all_exported_files[[i]]
+  if (!is.null(files)) {
+    figure_name <- paste("Figure", i)
+    message(figure_name, ":")
+    if (!is.null(files$png)) { message("  PNG: ", basename(files$png)); total_files <- total_files + 1 }
+    if (!is.null(files$pdf)) { message("  PDF: ", basename(files$pdf)); total_files <- total_files + 1 }
+    if (!is.null(files$jpeg)) { message("  JPEG: ", basename(files$jpeg)); total_files <- total_files + 1 }
+  }
+}
+
+# Count ranking files
+for (pillar_name in names(all_ranking_tables)) {
+  ranking_info <- all_ranking_tables[[pillar_name]]
+  if (!is.null(ranking_info$excel_file)) {
+    message("Ranking Table (", pillar_name, "): ", basename(ranking_info$excel_file))
+    total_files <- total_files + 1
+  }
+}
+
+message("Supporting CSV: Country_Lists_Complete_Pipeline.csv")
+total_files <- total_files + 1
+
+message("\nEXPORT LOCATIONS:")
+message("  Figures: ", file.path(execution_metadata$export_path, "figures"))
+message("  Rankings: ", file.path(execution_metadata$export_path, "ranking_tables"))
+message("  Country Lists: ", execution_metadata$export_path)
+
+message("\nPROJECT STATUS:")
+message("✓ Data loaded and validated")
+message("✓ Countries filtered to target specification")
+message("✓ Core indicators identified and normalized")
+message("✓ Faceted boxplots created (", successful_figures, "/", length(figure_specs), ")")
+message("✓ Ranking tables created (", successful_rankings, "/", length(figure_specs), ")")
+message("✓ Files exported in multiple formats")
+message("✓ Total files exported: ", total_files)
+message("✓ Top performer highlighting implemented")
+
+if (successful_figures == length(figure_specs) && successful_rankings == length(figure_specs)) {
+  message("\n", paste(rep("=", 80), collapse=""))
+  message("GVC AFRICA COMPLETE PIPELINE v1.3 - TOP PERFORMERS SUCCESS!")
+  message("All faceted analyses and ranking tables ready for publication")
+  message("Enhanced visualization: Top performers highlighted in regional colors")
+  message("Caption guidance: Black circles = all countries, colored circles = top performers")
+  message(paste(rep("=", 80), collapse=""))
+} else {
+  message("\n", paste(rep("=", 80), collapse=""))
+  message("GVC AFRICA COMPLETE PIPELINE v1.3 - PARTIAL SUCCESS!")
+  message("Some outputs may need manual review due to missing indicators")
+  message("Successful figures: ", successful_figures, "/", length(figure_specs))
+  message("Successful rankings: ", successful_rankings, "/", length(figure_specs))
+  message(paste(rep("=", 80), collapse=""))
+}
