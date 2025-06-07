@@ -19,9 +19,9 @@ Analyze and visualize readiness metrics for African economies in global value ch
 ```
 GVC_AFRICA/
 ├── Data/                  # Raw input data files (NOT included in repo)
-├── exports/
-│   ├── figures/           # Output: Plots/figures (not tracked)
-│   └── clean/             # Output: Cleaned/processed data (not tracked)
+├── outputs/               # Generated analysis results
+│   ├── figures/           # Plots/figures (not tracked)
+│   └── clean/             # Cleaned/processed data (not tracked)
 ├── logs/                  # Optional logs (not tracked)
 ├── scripts/               # Optional modular scripts
 ├── africa_china_gvc_master_replication.R
@@ -83,17 +83,29 @@ The script will sequentially execute all workflow parts (0–10):
 - **Part 9:** Validation and diagnostics
 - **Part 10:** Final outputs and documentation
 
+### Output Directory
+
+All figures, tables, and cleaned data are written to a single export root
+directory. By default this path is:
+
+```
+/Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH
+```
+
+You can modify the `export_root` variable at the top of each script if you wish
+to save the outputs elsewhere.
+
 ---
 
 ### 3. Expected Outputs
 
 After successful replication:
 
-- **Cleaned Data:**  
-  Saved in `exports/clean/` (e.g., `Business_Ready_clean.csv`, `master_dataset.csv`)
+- **Cleaned Data:**
+  Saved in `outputs/clean/` (e.g., `Business_Ready_clean.csv`, `master_dataset.csv`)
 
-- **Figures/Plots:**  
-  Saved in `exports/figures/` (e.g., `pca_analysis.png`, `africa_readiness_map.png`)
+- **Figures/Plots:**
+  Saved in `outputs/figures/` (e.g., `pca_analysis.png`, `africa_readiness_map.png`)
 
 - **Analysis Results:**  
   Summary statistics, cluster assignments, and policy recommendations

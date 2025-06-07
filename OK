@@ -5,7 +5,7 @@
 # Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-07 00:15:32
 # Current User's Login: Canomoncada
 # Status: ELITE PUBLICATION-READY VERSION WITH GVC EDITORIAL STANDARDS
-# Export Directory: /Volumes/VALEN/Africa:LAC/Harmonization/Ready
+# Export Directory: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH
 # =====================================================================================
 
 # Load Required Libraries
@@ -32,13 +32,16 @@ message("Data loading and analysis starting for user: Canomoncada at 2025-06-07 
 current_timestamp <- "2025-06-07 00:15:32"
 current_user <- "Canomoncada"
 
+# Unified export directory used across all modules
+export_root <- "/Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH"
+
 # GVC Editorial Standard Paths
 gvc_config <- list(
   # Main export directory per editorial standards
-  main_export_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready",
-  figures_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready/figures",
-  ranking_tables_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready/ranking_tables",
-  country_list_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready/Country_Lists_Complete_Pipeline.csv",
+  main_export_path = export_root,
+  figures_path = file.path(export_root, "figures"),
+  ranking_tables_path = file.path(export_root, "ranking_tables"),
+  country_list_path = file.path(export_root, "Country_Lists_Complete_Pipeline.csv"),
   # Source data path per editorial standards
   source_data_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex/Core_Pillars_Annex_138_Final.csv"
 )
@@ -50,7 +53,8 @@ create_gvc_directories <- function() {
   dirs_to_create <- c(
     gvc_config$main_export_path,
     gvc_config$figures_path,
-    gvc_config$ranking_tables_path
+    gvc_config$ranking_tables_path,
+    file.path(export_root, "region_lists")
   )
   
   for (dir_path in dirs_to_create) {
@@ -61,9 +65,27 @@ create_gvc_directories <- function() {
       cat("✓ Exists:", dir_path, "\n")
     }
   }
+
+  regions <- c("AFRICA", "LAC", "OECD", "ASEAN", "CHINA")
+  for (r in regions) {
+    sub_dir <- file.path(gvc_config$figures_path, r)
+    if (!dir.exists(sub_dir)) {
+      dir.create(sub_dir, recursive = TRUE)
+    }
+  }
 }
 
 create_gvc_directories()
+
+# Export region country lists
+export_region_lists <- function(region_map) {
+  list_dir <- file.path(export_root, "region_lists")
+  for (r in names(region_map)) {
+    file <- file.path(list_dir, paste0(r, "_countries.csv"))
+    write.csv(data.frame(Country = region_map[[r]]), file, row.names = FALSE)
+  }
+  cat("✓ Region lists exported to", list_dir, "\n")
+}
 
 # GVC Editorial Color Standards (EXACT SPECIFICATION)
 gvc_colors <- list(
@@ -141,6 +163,7 @@ load_gvc_data <- function() {
   if (file.exists(gvc_config$source_data_path)) {
     data <- read_csv(gvc_config$source_data_path)
     cat("✓ Source data loaded:", nrow(data), "rows,", ncol(data), "columns\n")
+    export_region_lists(split(data$Country, data$Region))
     return(data)
   } else {
     cat("⚠ Source data not found. Creating demonstration dataset.\n")
@@ -248,6 +271,8 @@ create_gvc_demo_data <- function() {
   for (col in indicator_names) {
     data[[col]] <- pmax(10, pmin(100, data[[col]]))
   }
+
+  export_region_lists(regions)
   
   cat(sprintf("✓ GVC demonstration dataset: %d countries, %d indicators\n", 
               nrow(data), length(indicator_names)))
@@ -998,7 +1023,7 @@ cat("Coverage: Includes", nrow(complete_data), "countries across five regions\n\
 
 cat("EDITORIAL STANDARDS COMPLIANCE - FINAL CHECK:\n")
 cat("================================================================================\n")
-cat("✅ Paths: All exports in /Volumes/VALEN/Africa:LAC/Harmonization/Ready\n")
+cat("✅ Paths: All exports in /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH\n")
 cat("✅ Colors: Official GVC color scheme implemented\n")
 cat("✅ Fonts: Compatible system fonts used (Arial fallback resolved)\n")
 cat("✅ Labels: Exact pillar and indicator names per editorial standards\n")
@@ -1009,7 +1034,7 @@ cat("✅ Normalization: All indicators on 0-1 scale\n")
 cat("✅ Quality: Font errors resolved, all exports successful\n")
 
 cat("\n🎯 MISSION ACCOMPLISHED - ALL EXPORTS READY FOR PUBLICATION\n")
-cat("📁 Location: /Volumes/VALEN/Africa:LAC/Harmonization/Ready\n")
+cat("📁 Location: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH\n")
 cat("⏰ Completed: 2025-06-07 00:18:18 UTC\n")
 cat("👤 User: Canomoncada\n")
 cat("🚀 Status: Production Ready - Editorial Standards Compliant\n")
@@ -1080,10 +1105,10 @@ cat("===========================================================================
 config <- list(
   timestamp = "2025-06-07 01:20:23",
   user = "Canomoncada",
-  base_directory = "/Volumes/VALEN/Africa:LAC/Harmonization/GVC AFRICA",
-  secondary_directory = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready",
+  base_directory = export_root,
+  secondary_directory = export_root,
   source_data_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex/Core_Pillars_Annex_138_Final.csv",
-  country_list_path = "/Volumes/VALEN/Africa:LAC/Harmonization/GVC AFRICA/Country_Lists_Complete_Pipeline.csv",
+  country_list_path = file.path(export_root, "Country_Lists_Complete_Pipeline.csv"),
   session_id = paste0("GVC_PERFECT_", format(Sys.time(), "%Y%m%d_%H%M%S"))
 )
 
@@ -1984,10 +2009,10 @@ cat("===========================================================================
 config <- list(
   timestamp = "2025-06-07 01:38:37",
   user = "Canomoncada",
-  base_directory = "/Volumes/VALEN/Africa:LAC/Harmonization/GVC AFRICA",
-  secondary_directory = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready",
+  base_directory = export_root,
+  secondary_directory = export_root,
   source_data_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex/Core_Pillars_Annex_138_Final.csv",
-  country_list_path = "/Volumes/VALEN/Africa:LAC/Harmonization/GVC AFRICA/Country_Lists_Complete_Pipeline.csv",
+  country_list_path = file.path(export_root, "Country_Lists_Complete_Pipeline.csv"),
   session_id = paste0("GVC_COMPLETE_", format(Sys.time(), "%Y%m%d_%H%M%S"))
 )
 
@@ -4500,7 +4525,7 @@ log_message("COMPREHENSIVE STATISTICAL SUMMARIES AND ANALYSIS SECTION COMPLETED 
 # Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-07 01:36:17
 # Current User's Login: Canomoncada
 # Status: COMPLETE UNIFIED VERSION - ALL PARTS 1-11 INTEGRATED
-# Export Directory: /Volumes/VALEN/Africa:LAC/Harmonization/Ready
+# Export Directory: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH
 # Framework Components: Complete Master Perfect - Production Ready
 # =====================================================================================
 
@@ -4510,7 +4535,7 @@ cat("===========================================================================
 cat("Framework Date: 2025-06-07 01:36:17 UTC\n")
 cat("Lead Developer: Canomoncada\n")
 cat("Version: Complete Master Perfect - All Components Integrated\n")
-cat("Export Directory: /Volumes/VALEN/Africa:LAC/Harmonization/Ready\n")
+cat("Export Directory: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH\n")
 cat("Status: Production ready with all 13 outputs + advanced components\n")
 cat("================================================================================\n\n")
 
@@ -4571,10 +4596,10 @@ package_status <- load_complete_packages(required_packages)
 config <- list(
   timestamp = "2025-06-07 01:36:17",
   user = "Canomoncada",
-  base_directory = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready",
-  figures_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready/figures",
-  ranking_tables_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready/ranking_tables",
-  country_list_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready/Country_Lists_Complete_Pipeline.csv",
+  base_directory = export_root,
+  figures_path = file.path(export_root, "figures"),
+  ranking_tables_path = file.path(export_root, "ranking_tables"),
+  country_list_path = file.path(export_root, "Country_Lists_Complete_Pipeline.csv"),
   source_data_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex/Core_Pillars_Annex_138_Final.csv",
   session_id = paste0("GVC_PERFECT_", format(Sys.time(), "%Y%m%d_%H%M%S"))
 )
@@ -5006,8 +5031,10 @@ message("PART 5: Creating All 9 Comprehensive Figures")
 create_gvc_caption <- function(special_note = NULL, num_countries = NULL) {
   coverage_text <- if (!is.null(num_countries)) {
     paste0("Coverage: Includes ", num_countries, " countries across five regions (see Country Lists).")
-  } else {
+  } else if (exists("complete_data")) {
     paste0("Coverage: Includes ", nrow(complete_data), " countries across five regions (see Country Lists).")
+  } else {
+    "Coverage: Includes countries across five regions (see Country Lists)."
   }
   
   base_caption <- paste0(
@@ -5991,7 +6018,7 @@ create_technical_methodology_documentation <- function() {
     "Canomoncada (2025). Complete Master GVC Readiness Analysis Framework.\n",
     "Version: Complete Master Perfect - All Components Integrated.\n",
     "Created: 2025-06-07 01:44:37 UTC.\n",
-    "Export Directory: /Volumes/VALEN/Africa:LAC/Harmonization/Ready\n\n",
+    "Export Directory: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH\n\n",
     
     "Data Sources:\n",
     "- ITU: Internet and Mobile Connectivity Indicators\n",
@@ -6066,7 +6093,7 @@ create_user_guide_documentation <- function() {
     
     "FILE ORGANIZATION:\n",
     "================================================================================\n",
-    "Main Directory: ", ifelse(exists("config"), config$base_directory, "/Volumes/VALEN/Africa:LAC/Harmonization/Ready"), "\n\n",
+    "Main Directory: ", ifelse(exists("config"), config$base_directory, "/Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH"), "\n\n",
     
     "Key Folders:\n",
     "├── figures/                    # GVC Editorial Standard figures\n",
@@ -6814,7 +6841,7 @@ cat("===========================================================================
 # Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-07 01:07:13
 # Current User's Login: Canomoncada
 # Status: COMPLETE MASTER VERSION - PEER REVIEW AND REPLICATION READY
-# Export Directory: /Volumes/VALEN/Africa:LAC/Harmonization/Ready
+# Export Directory: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH
 # Framework Components: Parts 1-11 Complete with Advanced Analytics
 # =====================================================================================
 
@@ -6824,7 +6851,7 @@ cat("===========================================================================
 cat("Framework Date: 2025-06-07 01:07:13 UTC\n")
 cat("Lead Developer: Canomoncada\n")
 cat("Version: Complete Master Perfect - All Components Implemented\n")
-cat("Export Directory: /Volumes/VALEN/Africa:LAC/Harmonization/Ready\n")
+cat("Export Directory: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH\n")
 cat("Status: Production ready with all 13 outputs + advanced components\n")
 cat("================================================================================\n\n")
 
@@ -6885,10 +6912,10 @@ package_status <- load_complete_packages(required_packages)
 config <- list(
   timestamp = "2025-06-07 01:07:13",
   user = "Canomoncada",
-  base_directory = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready",
-  figures_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready/figures",
-  ranking_tables_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready/ranking_tables",
-  country_list_path = "/Volumes/VALEN/Africa:LAC/Harmonization/Ready/Country_Lists_Complete_Pipeline.csv",
+  base_directory = export_root,
+  figures_path = file.path(export_root, "figures"),
+  ranking_tables_path = file.path(export_root, "ranking_tables"),
+  country_list_path = file.path(export_root, "Country_Lists_Complete_Pipeline.csv"),
   source_data_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex/Core_Pillars_Annex_138_Final.csv",
   session_id = paste0("GVC_PERFECT_", format(Sys.time(), "%Y%m%d_%H%M%S"))
 )
