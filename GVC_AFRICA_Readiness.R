@@ -126,6 +126,8 @@ cat("- User:", analysis_metadata$user_login, "\n\n")
 
 # Project structure setup with validation
 project_root <- "/Volumes/VALEN/Africa:LAC/AFRICA"
+# Unified export directory for all outputs
+export_root <- "/Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH"
 
 # Validate project root exists
 if (!dir.exists(project_root)) {
@@ -139,13 +141,13 @@ cat("✓ Project root validated:", project_root, "\n")
 params <- list(
   # Core directories
   data_path      = file.path(project_root, "Data"),
-  export_root    = file.path(project_root, "export"),
-  clean_dir      = file.path(project_root, "export", "clean"),
-  visual_dir     = file.path(project_root, "export", "png_pdf"),
-  excel_dir      = file.path(project_root, "export", "excel_outputs"),
-  csv_dir        = file.path(project_root, "export", "csv_outputs"),
-  logs_dir       = file.path(project_root, "export", "logs"),
-  archive_dir    = file.path(project_root, "export", "archives"),
+  export_root    = export_root,
+  clean_dir      = file.path(export_root, "clean"),
+  visual_dir     = file.path(export_root, "png_pdf"),
+  excel_dir      = file.path(export_root, "excel_outputs"),
+  csv_dir        = file.path(export_root, "csv_outputs"),
+  logs_dir       = file.path(export_root, "logs"),
+  archive_dir    = file.path(export_root, "archives"),
   
   # Analysis parameters with years for each indicator
   indicator_years = list(

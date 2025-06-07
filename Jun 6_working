@@ -119,7 +119,8 @@ execution_metadata <- list(
   data_year = "2023",
   style = "WTO/ADB/GAI Editorial Standard - Complete Master Pipeline with Comprehensive Rankings",
   clean_data_source_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex",
-  export_path = "/Volumes/VALEN/Africa:LAC/Harmonization/GVC AFRICA"
+  export_root = "/Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH",
+  export_path = export_root
 )
 
 # Create export directories
@@ -2116,7 +2117,7 @@ message("\n", paste(rep("=", 80), collapse=""))
 # PILLARS: Technology | Trade & Investment | Sustainability | Institutional
 #
 # EXPORT CONFIGURATION:
-# Base Path: /Volumes/VALEN/Africa:LAC/Harmonization/GVC AFRICA/advance
+# Base Path: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH/advance
 # Data Source: /Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex
 # Target File: Core_Pillars_Annex_138_Final.csv
 #

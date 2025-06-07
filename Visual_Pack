@@ -23,6 +23,9 @@ options(
   encoding = "UTF-8"
 )
 
+# Unified export directory used across all modules
+export_root <- "/Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH"
+
 # Professional package management with comprehensive error handling
 required_packages_master <- c(
   # Core data manipulation
@@ -93,9 +96,9 @@ MASTER_GVC_CONFIG <- list(
     source_base = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex",
     source_final_export = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex/FInal Export",
     core_data_file = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex/Core_Pillars_Annex_138_Final.csv",
-    
+
     # Master export destination - UPDATED TO REQUESTED PATH
-    master_export = "/Volumes/VALEN/Africa:LAC/Harmonization/Cafrica",
+    master_export = export_root,
     
     # Subdirectories for organized output
     subdirs = list(
@@ -4265,7 +4268,7 @@ cat("\nPipeline execution completed. All outputs ready for institutional use.\n"
 # Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-04 20:01:52
 # Current User's Login: Canomoncada
 # Status: COMPLETE MASTER VERSION - ALL COMPONENTS INTEGRATED
-# Export Directory: /Volumes/VALEN/Africa:LAC/Harmonization/Cafrica/Insert
+# Export Directory: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH
 # =====================================================================================
 
 cat("================================================================================\n")
@@ -4274,7 +4277,7 @@ cat("===========================================================================
 cat("Framework Date: 2025-06-04 20:01:52 UTC\n")
 cat("Lead Developer: Canomoncada\n")
 cat("Version: Complete Master - All Components Integrated\n")
-cat("Export Directory: /Volumes/VALEN/Africa:LAC/Harmonization/Cafrica/Insert\n")
+cat("Export Directory: /Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH\n")
 cat("Status: Production ready with all features\n")
 cat("================================================================================\n\n")
 
@@ -4334,7 +4337,7 @@ package_status <- load_complete_packages(required_packages)
 config <- list(
   timestamp = "2025-06-04 20:01:52",
   user = "Canomoncada",
-  base_directory = "/Volumes/VALEN/Africa:LAC/Harmonization/Cafrica/Insert",
+  base_directory = export_root,
   source_data_path = "/Volumes/VALEN/Africa:LAC/Africa_GVC/Data Annex/Core_Pillars_Annex_138_Final.csv",
   session_id = paste0("GVC_COMPLETE_ALL_", format(Sys.time(), "%Y%m%d_%H%M%S"))
 )
