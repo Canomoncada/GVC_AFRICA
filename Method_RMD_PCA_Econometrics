@@ -1,0 +1,2783 @@
+---
+title: "Comprehensive GVC Readiness Analysis: A Multi-Method Statistical Framework"
+subtitle: "Principal Component Analysis with Advanced Validation Techniques"
+author: "GVC Research Team"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    df_print: paged
+  pdf_document:
+    toc: true
+    number_sections: true
+    latex_engine: xelatex
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 12,
+  fig.height = 8,
+  cache = TRUE,
+  results = 'hold'
+)
+```
+
+# **Executive Summary**
+
+This document presents a comprehensive methodological framework for Global Value Chain (GVC) readiness analysis, implementing advanced statistical techniques with extensive validation procedures. Our approach integrates Principal Component Analysis (PCA) with bootstrap validation, Monte Carlo simulation, cross-validation, spatial econometric analysis, and alternative methodological comparisons to ensure robust and policy-relevant results.
+
+## **Key Methodological Innovations**
+
+- **Multi-Method Validation Convergence**: Integration of multiple validation techniques
+- **Spatial-Economic Integration**: Novel combination of spatial econometrics with PCA
+- **Comprehensive Uncertainty Quantification**: Full uncertainty decomposition framework
+- **Real-Time Sensitivity Analysis**: Dynamic robustness testing capabilities
+
+---
+
+# **1. Environment Setup & Package Loading**
+
+```{r load-packages}
+# Core Analysis Packages
+library(FactoMineR)     # Principal Component Analysis
+library(factoextra)     # PCA visualization and extraction
+library(corrplot)       # Correlation visualization
+library(psych)          # Factor analysis and reliability
+library(GPArotation)    # Factor rotation methods
+
+# Data Manipulation & Import
+library(readxl)         # Excel file reading
+library(dplyr)          # Data manipulation
+library(tidyr)          # Data tidying
+library(stringr)        # String operations
+
+# Advanced Statistical Methods
+library(boot)           # Bootstrap methods
+library(MASS)           # Robust statistical methods
+library(rrcov)          # Robust covariance estimation
+library(elasticnet)     # Sparse PCA
+library(kernlab)        # Kernel methods
+
+# Spatial Analysis
+library(spdep)          # Spatial dependence analysis
+library(spatialreg)     # Spatial regression models
+library(sp)             # Spatial data classes
+library(rgdal)          # Spatial data I/O
+
+# Missing Data Analysis
+library(VIM)            # Visualization and Imputation of Missing values
+library(mice)           # Multiple Imputation by Chained Equations
+library(Hmisc)          # Harrell Miscellaneous
+
+# Visualization
+library(ggplot2)        # Grammar of graphics
+library(plotly)         # Interactive plots
+library(viridis)        # Color scales
+library(RColorBrewer)   # Color palettes
+library(gridExtra)      # Multiple plot arrangements
+
+# Parallel Processing
+library(parallel)       # Parallel computation
+library(foreach)        # Parallel loops
+library(doParallel)     # Parallel backend
+
+# Quality Control & Reproducibility
+library(renv)           # Environment management
+library(here)           # Path management
+
+# Set global options
+options(digits = 4, scipen = 999)
+set.seed(2024)  # For reproducibility
+
+# Setup parallel processing
+n_cores <- parallel::detectCores() - 1
+registerDoParallel(cores = n_cores)
+
+cat("Environment Setup Complete\n")
+cat("Available cores for parallel processing:", n_cores, "\n")
+cat("R Version:", R.version.string, "\n")
+```
+
+---
+
+# **2. Data Loading & Quality Assessment**
+
+## **2.1 Data Import Function**
+
+```{r data-import-function}
+# Advanced Data Loading with Quality Assessment
+load_gvc_data <- function(file_path, sheet_name = NULL) {
+  
+  cat("=== DATA LOADING & QUALITY ASSESSMENT ===\n")
+  
+  tryCatch({
+    # Load data
+    if(is.null(sheet_name)) {
+      data <- readxl::read_excel(file_path)
+    } else {
+      data <- readxl::read_excel(file_path, sheet = sheet_name)
+    }
+    
+    cat("Data loaded successfully\n")
+    cat("Dimensions:", nrow(data), "rows ×", ncol(data), "columns\n")
+    
+    # Basic data info
+    cat("\nColumn names:\n")
+    print(names(data))
+    
+    # Data quality assessment
+    quality_assessment <- list(
+      completeness = round(sum(complete.cases(data)) / nrow(data) * 100, 2),
+      missing_pattern = apply(data, 2, function(x) sum(is.na(x))),
+      numeric_columns = sum(sapply(data, is.numeric)),
+      character_columns = sum(sapply(data, is.character))
+    )
+    
+    cat("\nData Quality Assessment:\n")
+    cat("Completeness:", quality_assessment$completeness, "%\n")
+    cat("Numeric columns:", quality_assessment$numeric_columns, "\n")
+    cat("Character columns:", quality_assessment$character_columns, "\n")
+    
+    # Missing data summary
+    if(any(quality_assessment$missing_pattern > 0)) {
+      cat("\nMissing data by column:\n")
+      missing_summary <- quality_assessment$missing_pattern[quality_assessment$missing_pattern > lar_assessment$missing_pattern > 0]
+      print(missing_summary)
+    }
+    
+    return(list(
+      data = data,
+      quality = quality_assessment,
+      file_info = list(path = file_path, sheet = sheet_name)
+    ))
+    
+  }, error = function(e) {
+    cat("Error loading data:", e$message, "\n")
+    return(NULL)
+  })
+}
+```
+
+## **2.2 Data Loading Implementation**
+
+```{r load-data}
+# Load GVC dataset
+data_path <- "/Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH/gvc-readiness-analysis/GVC_Data_Complete.xlsx"
+
+# Check if file exists and load
+if(file.exists(data_path)) {
+  gvc_data_raw <- load_gvc_data(data_path, sheet_name = "Main_Data")
+  
+  if(!is.null(gvc_data_raw)) {
+    data <- gvc_data_raw$data
+    data_quality <- gvc_data_raw$quality
+  } else {
+    stop("Failed to load data")
+  }
+} else {
+  # Create synthetic data for demonstration
+  cat("Creating synthetic GVC dataset for demonstration...\n")
+  
+  set.seed(2024)
+  n_countries <- 120
+  
+  # Create realistic country names
+  countries <- c(
+    paste("Country", sprintf("%03d", 1:n_countries))
+  )
+  
+  # Generate correlated GVC indicators
+  correlation_matrix <- matrix(c(
+    1.0, 0.7, 0.6, 0.5, 0.4,
+    0.7, 1.0, 0.6, 0.5, 0.3,
+    0.6, 0.6, 1.0, 0.4, 0.5,
+    0.5, 0.5, 0.4, 1.0, 0.6,
+    0.4, 0.3, 0.5, 0.6, 1.0
+  ), nrow = 5)
+  
+  # Generate synthetic data
+  synthetic_data <- MASS::mvrnorm(n = n_countries, 
+                                 mu = rep(50, 5), 
+                                 Sigma = correlation_matrix * 100)
+  
+  # Add some realistic noise and ensure positive values
+  synthetic_data <- abs(synthetic_data + rnorm(length(synthetic_data), 0, 5))
+  
+  data <- data.frame(
+    Country = countries,
+    Region = sample(c("Africa", "Asia", "Europe", "Americas", "Oceania"), 
+                   n_countries, replace = TRUE),
+    Logistics_Performance = synthetic_data[,1],
+    Institutional_Quality = synthetic_data[,2],
+    Technology_Readiness = synthetic_data[,3],
+    Human_Capital = synthetic_data[,4],
+    Market_Access = synthetic_data[,5],
+    stringsAsFactors = FALSE
+  )
+  
+  # Add some missing values realistically
+  missing_indices <- sample(1:nrow(data), size = floor(0.05 * nrow(data)))
+  for(i in missing_indices) {
+    col_to_missing <- sample(3:7, 1)
+    data[i, col_to_missing] <- NA
+  }
+  
+  cat("Synthetic dataset created with", nrow(data), "countries\n")
+  
+  # Quality assessment for synthetic data
+  data_quality <- list(
+    completeness = round(sum(complete.cases(data)) / nrow(data) * 100, 2),
+    missing_pattern = apply(data, 2, function(x) sum(is.na(x))),
+    numeric_columns = sum(sapply(data, is.numeric)),
+    character_columns = sum(sapply(data, is.character))
+  )
+}
+
+# Display data structure
+cat("\n=== FINAL DATASET STRUCTURE ===\n")
+str(data)
+head(data, 10)
+```
+
+---
+
+# **3. Data Preprocessing & Preparation**
+
+## **3.1 Advanced Data Preprocessing**
+
+```{r data-preprocessing}
+# Comprehensive Data Preprocessing Function
+preprocess_gvc_data <- function(data) {
+  
+  cat("=== DATA PREPROCESSING ===\n")
+  
+  # Identify numeric columns for analysis
+  numeric_cols <- sapply(data, is.numeric)
+  pca_variables <- names(data)[numeric_cols]
+  
+  cat("Variables selected for PCA:\n")
+  print(pca_variables)
+  
+  # Extract PCA matrix
+  pca_matrix <- data[, pca_variables, drop = FALSE]
+  
+  # Remove rows with all missing values
+  complete_rows <- complete.cases(pca_matrix)
+  pca_matrix <- pca_matrix[complete_rows, ]
+  
+  # Store country information
+  if("Country" %in% names(data)) {
+    countries <- data$Country[complete_rows]
+  } else {
+    countries <- rownames(pca_matrix)
+  }
+  
+  if("Region" %in% names(data)) {
+    regions <- data$Region[complete_rows]
+  } else {
+    regions <- rep("Unknown", nrow(pca_matrix))
+  }
+  
+  cat("Final analysis dataset:\n")
+  cat("Countries:", length(countries), "\n")
+  cat("Variables:", ncol(pca_matrix), "\n")
+  cat("Complete cases:", nrow(pca_matrix), "\n")
+  
+  # Handle remaining missing values with multiple imputation
+  if(any(is.na(pca_matrix))) {
+    cat("\nHandling missing values with multiple imputation...\n")
+    
+    # MICE imputation
+    imputed_data <- mice(pca_matrix, m = 5, method = 'pmm', printFlag = FALSE)
+    pca_matrix <- complete(imputed_data, action = 1)  # Use first imputation
+    
+    cat("Missing values imputed successfully\n")
+  }
+  
+  # Outlier detection
+  outliers <- detect_outliers_comprehensive(pca_matrix)
+  
+  return(list(
+    pca_matrix = pca_matrix,
+    countries = countries,
+    regions = regions,
+    variables = pca_variables,
+    outliers = outliers,
+    preprocessing_info = list(
+      original_rows = nrow(data),
+      final_rows = nrow(pca_matrix),
+      missing_handled = any(is.na(data[, pca_variables])),
+      outliers_detected = length(outliers$outlier_indices)
+    )
+  ))
+}
+
+# Comprehensive Outlier Detection
+detect_outliers_comprehensive <- function(data) {
+  
+  cat("Performing comprehensive outlier detection...\n")
+  
+  outlier_methods <- list()
+  
+  # Method 1: Statistical outliers (Z-score > 3)
+  z_scores <- scale(data)
+  z_outliers <- which(apply(abs(z_scores) > 3, 1, any))
+  outlier_methods$z_score <- z_outliers
+  
+  # Method 2: IQR method
+  iqr_outliers <- c()
+  for(col in 1:ncol(data)) {
+    Q1 <- quantile(data[,col], 0.25, na.rm = TRUE)
+    Q3 <- quantile(data[,col], 0.75, na.rm = TRUE)
+    IQR <- Q3 - Q1
+    lower_bound <- Q1 - 1.5 * IQR
+    upper_bound <- Q3 + 1.5 * IQR
+    col_outliers <- which(data[,col] < lower_bound | data[,col] > upper_bound)
+    iqr_outliers <- unique(c(iqr_outliers, col_outliers))
+  }
+  outlier_methods$iqr <- iqr_outliers
+  
+  # Method 3: Mahalanobis distance
+  if(nrow(data) > ncol(data)) {
+    maha_dist <- mahalanobis(data, colMeans(data), cov(data))
+    maha_outliers <- which(maha_dist > qchisq(0.975, df = ncol(data)))
+    outlier_methods$mahalanobis <- maha_outliers
+  }
+  
+  # Consensus outliers (appear in multiple methods)
+  all_outliers <- unlist(outlier_methods)
+  outlier_counts <- table(all_outliers)
+  consensus_outliers <- as.numeric(names(outlier_counts[outlier_counts >= 2]))
+  
+  cat("Outliers detected:\n")
+  cat("Z-score method:", length(outlier_methods$z_score), "\n")
+  cat("IQR method:", length(outlier_methods$iqr), "\n")
+  if(exists("maha_outliers")) cat("Mahalanobis method:", length(outlier_methods$mahalanobis), "\n")
+  cat("Consensus outliers:", length(consensus_outliers), "\n")
+  
+  return(list(
+    methods = outlier_methods,
+    consensus = consensus_outliers,
+    outlier_indices = consensus_outliers
+  ))
+}
+
+# Execute preprocessing
+processed_data <- preprocess_gvc_data(data)
+pca_matrix <- processed_data$pca_matrix
+countries <- processed_data$countries
+regions <- processed_data$regions
+
+# Display preprocessing results
+cat("\n=== PREPROCESSING RESULTS ===\n")
+cat("Final PCA matrix dimensions:", nrow(pca_matrix), "×", ncol(pca_matrix), "\n")
+cat("Countries included:", length(countries), "\n")
+cat("Outliers detected:", length(processed_data$outliers$consensus), "\n")
+```
+
+---
+
+# **4. PCA Suitability Assessment**
+
+## **4.1 Comprehensive Suitability Testing**
+
+```{r pca-suitability}
+# PCA Suitability Assessment Function
+assess_pca_suitability <- function(data) {
+  
+  cat("=== PCA SUITABILITY ASSESSMENT ===\n")
+  
+  suitability_results <- list()
+  
+  # 1. Kaiser-Meyer-Olkin (KMO) Test
+  kmo_result <- psych::KMO(data)
+  suitability_results$kmo <- kmo_result
+  
+  cat("1. Kaiser-Meyer-Olkin (KMO) Test:\n")
+  cat("   Overall KMO:", round(kmo_result$MSA, 4), "\n")
+  
+  kmo_interpretation <- case_when(
+    kmo_result$MSA >= 0.9 ~ "Marvelous",
+    kmo_result$MSA >= 0.8 ~ "Meritorious", 
+    kmo_result$MSA >= 0.7 ~ "Middling",
+    kmo_result$MSA >= 0.6 ~ "Mediocre",
+    kmo_result$MSA >= 0.5 ~ "Miserable",
+    TRUE ~ "Unacceptable"
+  )
+  cat("   Interpretation:", kmo_interpretation, "\n")
+  
+  # 2. Bartlett's Test of Sphericity
+  bartlett_result <- psych::cortest.bartlett(cor(data), n = nrow(data))
+  suitability_results$bartlett <- bartlett_result
+  
+  cat("\n2. Bartlett's Test of Sphericity:\n")
+  cat("   Chi-square:", round(bartlett_result$chisq, 4), "\n")
+  cat("   p-value:", format(bartlett_result$p.value, scientific = TRUE), "\n")
+  cat("   Interpretation:", ifelse(bartlett_result$p.value < 0.05, 
+                                  "Suitable for PCA", "Not suitable for PCA"), "\n")
+  
+  # 3. Correlation Matrix Properties
+  cor_matrix <- cor(data)
+  det_cor <- det(cor_matrix)
+  suitability_results$correlation <- list(
+    matrix = cor_matrix,
+    determinant = det_cor
+  )
+  
+  cat("\n3. Correlation Matrix Properties:\n")
+  cat("   Determinant:", format(det_cor, scientific = TRUE), "\n")
+  cat("   Interpretation:", ifelse(det_cor > 0.00001, 
+                                  "Suitable for PCA", "Potential multicollinearity"), "\n")
+  
+  # 4. Overall Suitability Score
+  kmo_score <- kmo_result$MSA
+  bartlett_score <- ifelse(bartlett_result$p.value < 0.05, 1, 0)
+  det_score <- ifelse(det_cor > 0.00001, 1, 0)
+  
+  overall_score <- (kmo_score + bartlett_score + det_score) / 3
+  suitability_results$overall_score <- overall_score
+  
+  cat("\n4. Overall Suitability Score:", round(overall_score, 4), "/1.0\n")
+  
+  overall_interpretation <- case_when(
+    overall_score >= 0.8 ~ "Excellent for PCA",
+    overall_score >= 0.6 ~ "Good for PCA",
+    overall_score >= 0.4 ~ "Acceptable for PCA", 
+    TRUE ~ "Poor for PCA"
+  )
+  cat("   Overall Assessment:", overall_interpretation, "\n")
+  
+  return(suitability_results)
+}
+
+# Perform suitability assessment
+suitability_assessment <- assess_pca_suitability(pca_matrix)
+
+# Correlation matrix visualization
+cat("\n=== CORRELATION MATRIX VISUALIZATION ===\n")
+```
+
+```{r correlation-plot, fig.width=10, fig.height=8}
+# Enhanced correlation plot
+cor_matrix <- cor(pca_matrix)
+
+corrplot(cor_matrix, 
+         method = "color",
+         type = "upper",
+         order = "hclust",
+         tl.cex = 0.8,
+         tl.col = "black",
+         tl.srt = 45,
+         addCoef.col = "black",
+         number.cex = 0.7,
+         col = colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))(200),
+         title = "GVC Indicators Correlation Matrix",
+         mar = c(0,0,2,0))
+```
+
+---
+
+# **5. Principal Component Analysis Implementation**
+
+## **5.1 Core PCA Analysis**
+
+```{r pca-analysis}
+# Comprehensive PCA Implementation
+perform_comprehensive_pca <- function(data, countries, regions) {
+  
+  cat("=== PRINCIPAL COMPONENT ANALYSIS ===\n")
+  
+  # Standard PCA
+  pca_result <- FactoMineR::PCA(data, scale.unit = TRUE, graph = FALSE)
+  
+  # Extract key components
+  eigenvalues <- pca_result$eig
+  variance_explained <- pca_result$eig[,2]
+  cumulative_variance <- cumsum(variance_explained)
+  
+  # Component retention analysis
+  retention_analysis <- analyze_component_retention(pca_result)
+  
+  # Variable contributions
+  variable_contributions <- pca_result$var$contrib
+  variable_loadings <- pca_result$var$coord
+  
+  # Individual coordinates (scores)
+  individual_scores <- pca_result$ind$coord
+  rownames(individual_scores) <- countries
+  
+  # Quality of representation
+  variable_quality <- pca_result$var$cos2
+  individual_quality <- pca_result$ind$cos2
+  
+  cat("PCA Results Summary:\n")
+  cat("Total components:", nrow(eigenvalues), "\n")
+  cat("Variance explained by PC1:", round(variance_explained[1], 2), "%\n")
+  cat("Variance explained by PC2:", round(variance_explained[2], 2), "%\n")
+  cat("Cumulative variance (PC1+PC2):", round(cumulative_variance[2], 2), "%\n")
+  
+  # Recommended number of components
+  recommended_components <- retention_analysis$recommended
+  cat("Recommended components:", recommended_components, "\n")
+  cat("Cumulative variance (recommended):", 
+      round(cumulative_variance[recommended_components], 2), "%\n")
+  
+  return(list(
+    pca_result = pca_result,
+    eigenvalues = eigenvalues,
+    variance_explained = variance_explained,
+    cumulative_variance = cumulative_variance,
+    retention_analysis = retention_analysis,
+    variable_contributions = variable_contributions,
+    variable_loadings = variable_loadings,
+    individual_scores = individual_scores,
+    variable_quality = variable_quality,
+    individual_quality = individual_quality,
+    countries = countries,
+    regions = regions,
+    recommended_components = recommended_components
+  ))
+}
+
+# Component Retention Analysis
+analyze_component_retention <- function(pca_result) {
+  
+  eigenvalues <- pca_result$eig[,1]
+  variance_explained <- pca_result$eig[,2]
+  cumulative_variance <- cumsum(variance_explained)
+  
+  retention_criteria <- list()
+  
+  # Kaiser criterion (eigenvalue > 1)
+  kaiser_components <- sum(eigenvalues > 1)
+  retention_criteria$kaiser <- kaiser_components
+  
+  # Scree plot elbow (simple implementation)
+  if(length(eigenvalues) >= 3) {
+    # Calculate second derivative to find elbow
+    second_deriv <- diff(eigenvalues, differences = 2)
+    elbow_point <- which.max(second_deriv) + 1
+    retention_criteria$scree <- min(elbow_point, length(eigenvalues))
+  } else {
+    retention_criteria$scree <- length(eigenvalues)
+  }
+  
+  # 60% variance threshold
+  variance_60 <- which(cumulative_variance >= 60)[1]
+  if(is.na(variance_60)) variance_60 <- length(eigenvalues)
+  retention_criteria$variance_60 <- variance_60
+  
+  # 80% variance threshold  
+  variance_80 <- which(cumulative_variance >= 80)[1]
+  if(is.na(variance_80)) variance_80 <- length(eigenvalues)
+  retention_criteria$variance_80 <- variance_80
+  
+  # Consensus recommendation (most conservative)
+  recommended <- min(kaiser_components, retention_criteria$scree, variance_60)
+  recommended <- max(recommended, 2)  # Minimum 2 components for interpretation
+  
+  cat("\nComponent Retention Analysis:\n")
+  cat("Kaiser criterion (λ > 1):", kaiser_components, "components\n")
+  cat("Scree plot elbow:", retention_criteria$scree, "components\n") 
+  cat("60% variance threshold:", variance_60, "components\n")
+  cat("80% variance threshold:", variance_80, "components\n")
+  cat("Recommended (conservative):", recommended, "components\n")
+  
+  return(list(
+    criteria = retention_criteria,
+    recommended = recommended,
+    eigenvalues = eigenvalues,
+    variance_explained = variance_explained,
+    cumulative_variance = cumulative_variance
+  ))
+}
+
+# Execute PCA analysis
+pca_results <- perform_comprehensive_pca(pca_matrix, countries, regions)
+```
+
+## **5.2 PCA Visualization**
+
+```{r pca-visualizations, fig.width=14, fig.height=10}
+# Comprehensive PCA Visualizations
+
+# 1. Scree Plot
+scree_plot <- fviz_eig(pca_results$pca_result, 
+                       addlabels = TRUE, 
+                       ylim = c(0, max(pca_results$variance_explained) + 10),
+                       title = "Scree Plot: Variance Explained by Components",
+                       subtitle = paste("Kaiser criterion suggests", 
+                                       pca_results$retention_analysis$criteria$kaiser, 
+                                       "components")) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5))
+
+# 2. Variables Contribution Plot
+contrib_plot <- fviz_contrib(pca_results$pca_result, 
+                            choice = "var", 
+                            axes = 1:2,
+                            title = "Variable Contributions to PC1 and PC2",
+                            subtitle = "Red dashed line indicates average contribution") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# 3. PCA Biplot
+biplot <- fviz_pca_biplot(pca_results$pca_result,
+                         geom.ind = "point",
+                         col.ind = factor(regions),
+                         palette = "Set2",
+                         addEllipses = TRUE,
+                         ellipse.level = 0.68,
+                         title = "PCA Biplot: Countries and Variables",
+                         subtitle = "Countries colored by region with 68% confidence ellipses") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# 4. Variables PCA Plot
+var_plot <- fviz_pca_var(pca_results$pca_result,
+                        col.var = "contrib",
+                        gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                        title = "Variables PCA Plot",
+                        subtitle = "Variables colored by contribution to PC1 and PC2") +
+  theme_minimal()
+
+# Arrange plots
+grid.arrange(scree_plot, contrib_plot, biplot, var_plot, nrow = 2, ncol = 2)
+```
+
+---
+
+# **6. Bootstrap Validation**
+
+## **6.1 Bootstrap Implementation**
+
+```{r bootstrap-validation}
+# Advanced Bootstrap Validation
+perform_bootstrap_validation <- function(data, n_bootstrap = 2000, confidence = 0.95) {
+  
+  cat("=== BOOTSTRAP VALIDATION ===\n")
+  cat("Running", n_bootstrap, "bootstrap iterations...\n")
+  
+  # Parallel bootstrap execution
+  bootstrap_results <- foreach(i = 1:n_bootstrap, 
+                              .combine = 'rbind',
+                              .packages = c('FactoMineR')) %dopar% {
+    
+    # Bootstrap sample
+    boot_indices <- sample(nrow(data), replace = TRUE)
+    boot_data <- data[boot_indices, ]
+    
+    # PCA on bootstrap sample
+    boot_pca <- FactoMineR::PCA(boot_data, scale.unit = TRUE, graph = FALSE)
+    
+    # Extract key metrics
+    eigenvalues <- boot_pca$eig[1:min(5, nrow(boot_pca$eig)), 1]
+    variance_explained <- boot_pca$eig[1:min(5, nrow(boot_pca$eig)), 2]
+    
+    # Pad with NAs if fewer than 5 components
+    if(length(eigenvalues) < 5) {
+      eigenvalues <- c(eigenvalues, rep(NA, 5 - length(eigenvalues)))
+      variance_explained <- c(variance_explained, rep(NA, 5 - length(variance_explained)))
+    }
+    
+    return(c(eigenvalues, variance_explained))
+  }
+  
+  # Process bootstrap results
+  n_components <- min(5, ncol(pca_results$eigenvalues))
+  eigenvalue_boots <- bootstrap_results[, 1:n_components]
+  variance_boots <- bootstrap_results[, (n_components+1):(2*n_components)]
+  
+  # Calculate confidence intervals
+  alpha <- 1 - confidence
+  
+  eigenvalue_ci <- apply(eigenvalue_boots, 2, function(x) {
+    quantile(x, c(alpha/2, 1-alpha/2), na.rm = TRUE)
+  })
+  
+  variance_ci <- apply(variance_boots, 2, function(x) {
+    quantile(x, c(alpha/2, 1-alpha/2), na.rm = TRUE)
+  })
+  
+  # Bootstrap stability metrics
+  eigenvalue_cv <- apply(eigenvalue_boots, 2, function(x) sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE))
+  variance_cv <- apply(variance_boots, 2, function(x) sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE))
+  
+  cat("Bootstrap validation completed\n")
+  cat("Eigenvalue stability (CV for PC1):", round(eigenvalue_cv[1], 4), "\n")
+  cat("Variance stability (CV for PC1):", round(variance_cv[1], 4), "\n")
+  
+  # Interpretation
+  stability_interpretation <- case_when(
+    eigenvalue_cv[1] < 0.1 ~ "Excellent stability",
+    eigenvalue_cv[1] < 0.2 ~ "Good stability", 
+    eigenvalue_cv[1] < 0.3 ~ "Moderate stability",
+    TRUE ~ "Poor stability"
+  )
+  
+  cat("Stability assessment:", stability_interpretation, "\n")
+  
+  return(list(
+    bootstrap_results = bootstrap_results,
+    eigenvalue_boots = eigenvalue_boots,
+    variance_boots = variance_boots,
+    eigenvalue_ci = eigenvalue_ci,
+    variance_ci = variance_ci,
+    eigenvalue_cv = eigenvalue_cv,
+    variance_cv = variance_cv,
+    stability_score = 1 - mean(eigenvalue_cv, na.rm = TRUE),
+    n_bootstrap = n_bootstrap,
+    confidence = confidence
+  ))
+}
+
+# Execute bootstrap validation
+bootstrap_results <- perform_bootstrap_validation(pca_matrix, n_bootstrap = 2000)
+
+# Display bootstrap confidence intervals
+cat("\n=== BOOTSTRAP CONFIDENCE INTERVALS ===\n")
+cat("95% Confidence Intervals for Eigenvalues:\n")
+for(i in 1:min(3, ncol(bootstrap_results$eigenvalue_ci))) {
+  cat("PC", i, ": [", 
+      round(bootstrap_results$eigenvalue_ci[1,i], 3), ", ",
+      round(bootstrap_results$eigenvalue_ci[2,i], 3), "]\n")
+}
+```
+
+## **6.2 Bootstrap Visualization**
+
+```{r bootstrap-plots, fig.width=12, fig.height=8}
+# Bootstrap Results Visualization
+
+# 1. Eigenvalue bootstrap distribution
+eigenvalue_data <- data.frame(
+  PC1 = bootstrap_results$eigenvalue_boots[,1],
+  PC2 = bootstrap_results$eigenvalue_boots[,2],
+  PC3 = bootstrap_results$eigenvalue_boots[,3]
+) %>%
+  pivot_longer(everything(), names_to = "Component", values_to = "Eigenvalue")
+
+eigenvalue_plot <- ggplot(eigenvalue_data, aes(x = Eigenvalue, fill = Component)) +
+  geom_histogram(alpha = 0.7, bins = 50) +
+  facet_wrap(~Component, scales = "free") +
+  labs(title = "Bootstrap Distribution of Eigenvalues",
+       subtitle = paste("Based on", bootstrap_results$n_bootstrap, "bootstrap samples"),
+       x = "Eigenvalue", y = "Frequency") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+
+# 2. Variance explained bootstrap distribution  
+variance_data <- data.frame(
+  PC1 = bootstrap_results$variance_boots[,1],
+  PC2 = bootstrap_results$variance_boots[,2], 
+  PC3 = bootstrap_results$variance_boots[,3]
+) %>%
+  pivot_longer(everything(), names_to = "Component", values_to = "Variance")
+
+variance_plot <- ggplot(variance_data, aes(x = Variance, fill = Component)) +
+  geom_histogram(alpha = 0.7, bins = 50) +
+  facet_wrap(~Component, scales = "free") +
+  labs(title = "Bootstrap Distribution of Variance Explained",
+       subtitle = "Percentage of total variance explained by each component",
+       x = "Variance Explained (%)", y = "Frequency") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+
+# Arrange plots
+grid.arrange(eigenvalue_plot, variance_plot, nrow = 2)
+```
+
+---
+
+# **7. Monte Carlo Simulation**
+
+## **7.1 Monte Carlo Implementation**
+
+```{r monte-carlo-simulation}
+# Monte Carlo Robustness Testing
+perform_monte_carlo_validation <- function(data, n_simulations = 5000) {
+  
+  cat("=== MONTE CARLO VALIDATION ===\n")
+  cat("Running", n_simulations, "Monte Carlo simulations...\n")
+  
+  # Original PCA results for comparison
+  original_pca <- FactoMineR::PCA(data, scale.unit = TRUE, graph = FALSE)
+  original_eigenvalues <- original_pca$eig[1:3, 1]
+  original_variance <- original_pca$eig[1:3, 2]
+  
+  # Parallel Monte Carlo execution
+  mc_results <- foreach(i = 1:n_simulations,
+                       .combine = 'rbind',
+                       .packages = c('FactoMineR')) %dopar% {
+    
+    # Scenario selection (random)
+    scenario <- sample(1:4, 1)
+    
+    scenario_data <- switch(scenario,
+      # Scenario 1: Gaussian noise addition (5% of std dev)
+      "1" = {
+        noise_level <- 0.05
+        noise_matrix <- matrix(rnorm(prod(dim(data)), 0, 
+                                   apply(data, 2, sd) * noise_level), 
+                              nrow = nrow(data))
+        data + noise_matrix
+      },
+      
+      # Scenario 2: Random missing data (10% missing rate)
+      "2" = {
+        temp_data <- data
+        n_missing <- floor(0.1 * prod(dim(data)))
+        missing_indices <- sample(prod(dim(data)), n_missing)
+        temp_data[missing_indices] <- NA
+        
+        # Simple imputation with column means
+        for(col in 1:ncol(temp_data)) {
+          temp_data[is.na(temp_data[,col]), col] <- mean(temp_data[,col], na.rm = TRUE)
+        }
+        temp_data
+      },
+      
+      # Scenario 3: Bootstrap subsample (80% of data)
+      "3" = {
+        subsample_size <- floor(0.8 * nrow(data))
+        subsample_indices <- sample(nrow(data), subsample_size)
+        data[subsample_indices, ]
+      },
+      
+      # Scenario 4: Outlier contamination (5% extreme values)
+      "4" = {
+        temp_data <- data
+        n_outliers <- floor(0.05 * nrow(data))
+        outlier_indices <- sample(nrow(data), n_outliers)
+        
+        for(idx in outlier_indices) {
+          col_to_modify <- sample(ncol(data), 1)
+          # Add extreme value (5 standard deviations)
+          temp_data[idx, col_to_modify] <- temp_data[idx, col_to_modify] + 
+                                          5 * sd(data[, col_to_modify]) * sample(c(-1, 1), 1)
+        }
+        temp_data
+      }
+    )
+    
+    # Run PCA on scenario data
+    tryCatch({
+      scenario_pca <- FactoMineR::PCA(scenario_data, scale.unit = TRUE, graph = FALSE)
+      eigenvalues <- scenario_pca$eig[1:3, 1]
+      variance_explained <- scenario_pca$eig[1:3, 2]
+      
+      return(c(scenario, eigenvalues, variance_explained))
+    }, error = function(e) {
+      # Return NAs if PCA fails
+      return(c(scenario, rep(NA, 6)))
+    })
+  }
+  
+  # Process results
+  mc_scenarios <- mc_results[, 1]
+  mc_eigenvalues <- mc_results[, 2:4]
+  mc_variance <- mc_results[, 5:7]
+  
+  # Remove failed simulations
+  valid_sims <- complete.cases(mc_results)
+  mc_scenarios <- mc_scenarios[valid_sims]
+  mc_eigenvalues <- mc_eigenvalues[valid_sims, ]
+  mc_variance <- mc_variance[valid_sims, ]
+  
+  # Calculate robustness metrics
+  eigenvalue_stability <- apply(mc_eigenvalues, 2, function(x) {
+    sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+  })
+  
+  variance_stability <- apply(mc_variance, 2, function(x) {
+    sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+  })
+  
+  # Scenario-specific analysis
+  scenario_results <- list()
+  for(s in 1:4) {
+    scenario_mask <- mc_scenarios == s
+    if(sum(scenario_mask) > 10) {  # Need sufficient samples
+      scenario_results[[s]] <- list(
+        eigenvalue_mean = colMeans(mc_eigenvalues[scenario_mask, ], na.rm = TRUE),
+        eigenvalue_sd = apply(mc_eigenvalues[scenario_mask, ], 2, sd, na.rm = TRUE),
+        variance_mean = colMeans(mc_variance[scenario_mask, ], na.rm = TRUE),
+        variance_sd = apply(mc_variance[scenario_mask, ], 2, sd, na.rm = TRUE),
+        n_simulations = sum(scenario_mask)
+      )
+    }
+  }
+  
+  # Overall robustness score
+  robustness_score <- 1 - mean(eigenvalue_stability, na.rm = TRUE)
+  
+  cat("Monte Carlo validation completed\n")
+  cat("Valid simulations:", sum(valid_sims), "/", n_simulations, "\n")
+  cat("PC1 eigenvalue stability (CV):", round(eigenvalue_stability[1], 4), "\n")
+  cat("Overall robustness score:", round(robustness_score, 4), "\n")
+  
+  robustness_interpretation <- case_when(
+    robustness_score > 0.8 ~ "Excellent robustness",
+    robustness_score > 0.6 ~ "Good robustness",
+    robustness_score > 0.4 ~ "Moderate robustness", 
+    TRUE ~ "Poor robustness"
+  )
+  
+  cat("Robustness assessment:", robustness_interpretation, "\n")
+  
+  return(list(
+    mc_results = mc_results,
+    mc_scenarios = mc_scenarios,
+    mc_eigenvalues = mc_eigenvalues,
+    mc_variance = mc_variance,
+    scenario_results = scenario_results,
+    eigenvalue_stability = eigenvalue_stability,
+    variance_stability = variance_stability,
+    robustness_score = robustness_score,
+    original_eigenvalues = original_eigenvalues,
+    original_variance = original_variance,
+    n_simulations = n_simulations,
+    valid_simulations = sum(valid_sims)
+  ))
+}
+
+# Execute Monte Carlo validation
+mc_results <- perform_monte_carlo_validation(pca_matrix, n_simulations = 5000)
+```
+
+## **7.2 Monte Carlo Visualization**
+
+```{r monte-carlo-plots, fig.width=14, fig.height=10}
+# Monte Carlo Results Visualization
+
+# Prepare data for visualization
+scenario_names <- c("Gaussian Noise", "Missing Data", "Subsampling", "Outlier Contamination")
+mc_data <- data.frame(
+  Scenario = factor(mc_results$mc_scenarios, labels = scenario_names),
+  PC1_Eigenvalue = mc_results$mc_eigenvalues[,1],
+  PC2_Eigenvalue = mc_results$mc_eigenvalues[,2],
+  PC1_Variance = mc_results$mc_variance[,1],
+  PC2_Variance = mc_results$mc_variance[,2]
+)
+
+# 1. Eigenvalue robustness by scenario
+eigenvalue_plot <- ggplot(mc_data, aes(x = Scenario, y = PC1_Eigenvalue, fill = Scenario)) +
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
+  geom_hline(yintercept = mc_results$original_eigenvalues[1], 
+             linetype = "dashed", color = "red", size = 1) +
+  labs(title = "PC1 Eigenvalue Robustness Across Scenarios",
+       subtitle = "Red line indicates original eigenvalue",
+       x = "Scenario", y = "PC1 Eigenvalue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  scale_fill_viridis_d()
+
+# 2. Variance explained robustness
+variance_plot <- ggplot(mc_data, aes(x = Scenario, y = PC1_Variance, fill = Scenario)) +
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
+  geom_hline(yintercept = mc_results$original_variance[1], 
+             linetype = "dashed", color = "red", size = 1) +
+  labs(title = "PC1 Variance Explained Robustness",
+       subtitle = "Percentage of variance explained by first component",
+       x = "Scenario", y = "Variance Explained (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  scale_fill_viridis_d()
+
+# 3. Stability comparison across components
+stability_data <- data.frame(
+  Component = paste0("PC", 1:3),
+  Eigenvalue_CV = mc_results$eigenvalue_stability,
+  Variance_CV = mc_results$variance_stability
+) %>%
+  pivot_longer(cols = c(Eigenvalue_CV, Variance_CV), 
+               names_to = "Metric", values_to = "CV")
+
+stability_plot <- ggplot(stability_data, aes(x = Component, y = CV, fill = Metric)) +
+  geom_col(position = "dodge", alpha = 0.8) +
+  labs(title = "Component Stability Analysis",
+       subtitle = "Coefficient of Variation (lower is more stable)",
+       x = "Principal Component", y = "Coefficient of Variation") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#E69F00", "#56B4E9"))
+
+# 4. Scenario impact summary
+scenario_summary <- mc_data %>%
+  group_by(Scenario) %>%
+  summarise(
+    Mean_PC1_Eigenvalue = mean(PC1_Eigenvalue, na.rm = TRUE),
+    SD_PC1_Eigenvalue = sd(PC1_Eigenvalue, na.rm = TRUE),
+    Mean_PC1_Variance = mean(PC1_Variance, na.rm = TRUE),
+    SD_PC1_Variance = sd(PC1_Variance, na.rm = TRUE),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    Eigenvalue_Impact = abs(Mean_PC1_Eigenvalue - mc_results$original_eigenvalues[1]),
+    Variance_Impact = abs(Mean_PC1_Variance - mc_results$original_variance[1])
+  )
+
+impact_plot <- ggplot(scenario_summary, aes(x = Scenario)) +
+  geom_col(aes(y = Eigenvalue_Impact), fill = "#E69F00", alpha = 0.7) +
+  labs(title = "Scenario Impact on PC1 Eigenvalue",
+       subtitle = "Absolute deviation from original eigenvalue",
+       x = "Scenario", y = "Impact (Absolute Deviation)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Arrange plots
+grid.arrange(eigenvalue_plot, variance_plot, stability_plot, impact_plot, nrow = 2, ncol = 2)
+```
+
+---
+
+# **8. Cross-Validation**
+
+## **8.1 K-Fold Cross-Validation Implementation**
+
+```{r cross-validation}
+# Advanced K-Fold Cross-Validation for PCA
+perform_cv_validation <- function(data, k_folds = 10) {
+  
+  cat("=== CROSS-VALIDATION ANALYSIS ===\n")
+  cat("Performing", k_folds, "-fold cross-validation...\n")
+  
+  n <- nrow(data)
+  fold_size <- floor(n / k_folds)
+  
+  # Create stratified folds (maintain distribution characteristics)
+  # Simple stratification based on first principal component
+  temp_pca <- FactoMineR::PCA(data, scale.unit = TRUE, graph = FALSE)
+  pc1_scores <- temp_pca$ind$coord[,1]
+  pc1_quantiles <- cut(pc1_scores, breaks = k_folds, labels = FALSE)
+  
+  # Create folds maintaining distribution
+  folds <- list()
+  for(i in 1:k_folds) {
+    folds[[i]] <- which(pc1_quantiles == i)
+  }
+  
+  # Ensure all observations are assigned
+  unassigned <- setdiff(1:n, unlist(folds))
+  if(length(unassigned) > 0) {
+    for(i in seq_along(unassigned)) {
+      fold_idx <- ((i - 1) %% k_folds) + 1
+      folds[[fold_idx]] <- c(folds[[fold_idx]], unassigned[i])
+    }
+  }
+  
+  cv_results <- list()
+  
+  for(fold in 1:k_folds) {
+    cat("Processing fold", fold, "of", k_folds, "...\n")
+    
+    # Training and testing sets
+    test_indices <- folds[[fold]]
+    train_indices <- setdiff(1:n, test_indices)
+    
+    train_data <- data[train_indices, ]
+    test_data <- data[test_indices, ]
+    
+    # Fit PCA on training data
+    train_pca <- FactoMineR::PCA(train_data, scale.unit = TRUE, graph = FALSE)
+    
+    # Project test data onto training PCA space
+    # Standardize test data using training means and sds
+    train_means <- colMeans(train_data)
+    train_sds <- apply(train_data, 2, sd)
+    
+    test_scaled <- scale(test_data, center = train_means, scale = train_sds)
+    
+    # Project onto training PCA space
+    test_projection <- test_scaled %*% train_pca$var$coord
+    
+    # Calculate reconstruction error
+    # Reconstruct test data from first few components
+    n_components <- min(3, ncol(train_pca$var$coord))
+    reconstructed <- test_projection[, 1:n_components] %*% t(train_pca$var$coord[, 1:n_components])
+    
+    # Add back means
+    reconstructed_original <- scale(reconstructed, center = FALSE, scale = 1/train_sds)
+    reconstructed_original <- scale(reconstructed_original, center = -train_means, scale = FALSE)
+    
+    # Calculate reconstruction error (RMSE)
+    reconstruction_error <- sqrt(mean((test_data - reconstructed_original)^2, na.rm = TRUE))
+    
+    # Variance explained on test set
+    test_var_explained <- apply(test_projection^2, 2, sum) / sum(test_scaled^2)
+    
+    cv_results[[fold]] <- list(
+      fold_number = fold,
+      train_size = nrow(train_data),
+      test_size = nrow(test_data),
+      reconstruction_error = reconstruction_error,
+      test_variance_explained = test_var_explained[1:n_components],
+      train_eigenvalues = train_pca$eig[1:n_components, 1],
+      train_variance = train_pca$eig[1:n_components, 2]
+    )
+  }
+  
+  # Aggregate results
+  reconstruction_errors <- sapply(cv_results, function(x) x$reconstruction_error)
+  mean_reconstruction_error <- mean(reconstruction_errors)
+  sd_reconstruction_error <- sd(reconstruction_errors)
+  
+  # Aggregate variance explained
+  test_variances <- t(sapply(cv_results, function(x) x$test_variance_explained))
+  mean_test_variance <- colMeans(test_variances, na.rm = TRUE)
+  sd_test_variance <- apply(test_variances, 2, sd, na.rm = TRUE)
+  
+  # Training consistency
+  train_eigenvalues <- t(sapply(cv_results, function(x) x$train_eigenvalues))
+  eigenvalue_consistency <- apply(train_eigenvalues, 2, function(x) sd(x) / mean(x))
+  
+  # Generalizability score
+  generalizability_score <- 1 / (1 + mean_reconstruction_error)
+  
+  cat("Cross-validation completed\n")
+  cat("Mean reconstruction error:", round(mean_reconstruction_error, 4), "\n")
+  cat("Standard deviation of reconstruction error:", round(sd_reconstruction_error, 4), "\n")
+  cat("Mean test variance explained (PC1):", round(mean_test_variance[1] * 100, 2), "%\n")
+  cat("Eigenvalue consistency (CV for PC1):", round(eigenvalue_consistency[1], 4), "\n")
+  cat("Generalizability score:", round(generalizability_score, 4), "\n")
+  
+  generalizability_interpretation <- case_when(
+    generalizability_score > 0.8 ~ "Excellent generalizability",
+    generalizability_score > 0.6 ~ "Good generalizability",
+    generalizability_score > 0.4 ~ "Moderate generalizability",
+    TRUE ~ "Poor generalizability"
+  )
+  
+  cat("Generalizability assessment:", generalizability_interpretation, "\n")
+  
+  return(list(
+    fold_results = cv_results,
+    reconstruction_errors = reconstruction_errors,
+    mean_reconstruction_error = mean_reconstruction_error,
+    sd_reconstruction_error = sd_reconstruction_error,
+    test_variances = test_variances,
+    mean_test_variance = mean_test_variance,
+    sd_test_variance = sd_test_variance,
+    train_eigenvalues = train_eigenvalues,
+    eigenvalue_consistency = eigenvalue_consistency,
+    generalizability_score = generalizability_score,
+    k_folds = k_folds
+  ))
+}
+
+# Execute cross-validation
+cv_results <- perform_cv_validation(pca_matrix, k_folds = 10)
+```
+
+## **8.2 Cross-Validation Visualization**
+
+```{r cv-plots, fig.width=12, fig.height=8}
+# Cross-Validation Results Visualization
+
+# 1. Reconstruction error across folds
+reconstruction_data <- data.frame(
+  Fold = 1:cv_results$k_folds,
+  Reconstruction_Error = cv_results$reconstruction_errors
+)
+
+reconstruction_plot <- ggplot(reconstruction_data, aes(x = Fold, y = Reconstruction_Error)) +
+  geom_point(size = 3, color = "#E69F00") +
+  geom_line(color = "#E69F00", alpha = 0.6) +
+  geom_hline(yintercept = cv_results$mean_reconstruction_error, 
+             linetype = "dashed", color = "red") +
+  geom_hline(yintercept = cv_results$mean_reconstruction_error + cv_results$sd_reconstruction_error,
+             linetype = "dotted", color = "red", alpha = 0.7) +
+  geom_hline(yintercept = cv_results$mean_reconstruction_error - cv_results$sd_reconstruction_error,
+             linetype = "dotted", color = "red", alpha = 0.7) +
+  labs(title = "Cross-Validation: Reconstruction Error by Fold",
+       subtitle = "Red dashed line: mean error, dotted lines: ±1 SD",
+       x = "Fold Number", y = "Reconstruction Error (RMSE)") +
+  theme_minimal()
+
+# 2. Test variance explained across folds
+variance_data <- data.frame(
+  Fold = rep(1:cv_results$k_folds, 3),
+  Component = rep(paste0("PC", 1:3), each = cv_results$k_folds),
+  Variance_Explained = as.vector(cv_results$test_variances * 100)
+)
+
+variance_plot <- ggplot(variance_data, aes(x = Fold, y = Variance_Explained, color = Component)) +
+  geom_point(size = 2) +
+  geom_line(alpha = 0.7) +
+  labs(title = "Test Set Variance Explained by Fold",
+       subtitle = "Variance explained by each component on test data",
+       x = "Fold Number", y = "Variance Explained (%)") +
+  theme_minimal() +
+  scale_color_viridis_d()
+
+# 3. Training eigenvalue consistency
+eigenvalue_data <- data.frame(
+  Fold = rep(1:cv_results$k_folds, 3),
+  Component = rep(paste0("PC", 1:3), each = cv_results$k_folds),
+  Eigenvalue = as.vector(cv_results$train_eigenvalues)
+)
+
+eigenvalue_plot <- ggplot(eigenvalue_data, aes(x = Component, y = Eigenvalue, fill = Component)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Training Eigenvalue Consistency Across Folds",
+       subtitle = "Distribution of eigenvalues from training sets",
+       x = "Principal Component", y = "Eigenvalue") +
+  theme_minimal() +
+  scale_fill_viridis_d() +
+  theme(legend.position = "none")
+
+# 4. Cross-validation summary metrics
+summary_metrics <- data.frame(
+  Metric = c("Mean Reconstruction Error", "SD Reconstruction Error", 
+             "Mean PC1 Test Variance", "PC1 Eigenvalue CV", "Generalizability Score"),
+  Value = c(cv_results$mean_reconstruction_error, 
+            cv_results$sd_reconstruction_error,
+            cv_results$mean_test_variance[1] * 100,
+            cv_results$eigenvalue_consistency[1],
+            cv_results$generalizability_score),
+  Interpretation = c("Lower is better", "Lower is better", "Higher is better", 
+                    "Lower is better", "Higher is better")
+)
+
+summary_plot <- ggplot(summary_metrics, aes(x = reorder(Metric, Value), y = Value, 
+                                            fill = Interpretation)) +
+  geom_col(alpha = 0.8) +
+  coord_flip() +
+  labs(title = "Cross-Validation Summary Metrics",
+       x = "Metric", y = "Value") +
+  theme_minimal() +
+  scale_fill_manual(values = c("Higher is better" = "#56B4E9", 
+                              "Lower is better" = "#E69F00"))
+
+# Arrange plots
+grid.arrange(reconstruction_plot, variance_plot, eigenvalue_plot, summary_plot, nrow = 2, ncol = 2)
+```
+
+---
+
+# **9. GVC Readiness Index Construction**
+
+## **9.1 Index Construction Function**
+
+```{r index-construction}
+# Advanced GVC Readiness Index Construction
+construct_gvc_index <- function(pca_results, method = "variance_weighted") {
+  
+  cat("=== GVC READINESS INDEX CONSTRUCTION ===\n")
+  
+  # Extract components and weights
+  n_components <- pca_results$recommended_components
+  individual_scores <- pca_results$individual_scores[, 1:n_components]
+  variance_explained <- pca_results$variance_explained[1:n_components]
+  
+  cat("Using", n_components, "components for index construction\n")
+  cat("Cumulative variance explained:", 
+      round(sum(variance_explained), 2), "%\n")
+  
+  # Multiple weighting schemes
+  weighting_schemes <- list(
+    # Variance-based weights (default)
+    variance_based = variance_explained / sum(variance_explained),
+    
+    # Equal weights
+    equal_weights = rep(1/n_components, n_components),
+    
+    # Declining weights (geometric progression)
+    declining = (0.5^(0:(n_components-1))) / sum(0.5^(0:(n_components-1))),
+    
+    # First component only
+    first_component = c(1, rep(0, n_components-1))
+  )
+  
+  # Calculate indices for each weighting scheme
+  indices <- list()
+  validation_results <- list()
+  
+  for(scheme_name in names(weighting_schemes)) {
+    weights <- weighting_schemes[[scheme_name]]
+    
+    # Calculate weighted index
+    if(n_components == 1) {
+      raw_index <- individual_scores[,1]
+    } else {
+      raw_index <- as.vector(individual_scores %*% weights)
+    }
+    
+    # Normalize to 0-100 scale
+    normalized_index <- 100 * (raw_index - min(raw_index)) / (max(raw_index) - min(raw_index))
+    
+    # Store results
+    indices[[scheme_name]] <- list(
+      raw = raw_index,
+      normalized = normalized_index,
+      weights = weights
+    )
+    
+    # Validation metrics
+    validation_results[[scheme_name]] <- list(
+      mean = mean(normalized_index),
+      sd = sd(normalized_index),
+      min = min(normalized_index),
+      max = max(normalized_index),
+      skewness = moments::skewness(normalized_index),
+      kurtosis = moments::kurtosis(normalized_index),
+      normality_test = shapiro.test(normalized_index)$p.value
+    )
+    
+    cat("\n", scheme_name, "weighting:\n")
+    cat("  Weights:", paste(round(weights, 3), collapse = ", "), "\n")
+    cat("  Index range:", round(min(normalized_index), 1), "-", 
+        round(max(normalized_index), 1), "\n")
+    cat("  Mean ± SD:", round(mean(normalized_index), 1), "±", 
+        round(sd(normalized_index), 1), "\n")
+  }
+  
+  # Select recommended index (variance-based by default)
+  recommended_index <- indices[[method]]$normalized
+  
+  # Create country rankings
+  country_rankings <- data.frame(
+    Country = pca_results$countries,
+    Region = pca_results$regions,
+    GVC_Index = recommended_index,
+    Rank = rank(-recommended_index),
+    stringsAsFactors = FALSE
+  ) %>%
+    arrange(desc(GVC_Index))
+  
+  # Quartile analysis
+  quartiles <- quantile(recommended_index, c(0.25, 0.5, 0.75))
+  country_rankings$Quartile <- cut(country_rankings$GVC_Index,
+                                  breaks = c(0, quartiles, 100),
+                                  labels = c("Q1 (Lowest)", "Q2", "Q3", "Q4 (Highest)"),
+                                  include.lowest = TRUE)
+  
+  cat("\n=== INDEX VALIDATION SUMMARY ===\n")
+  cat("Recommended method:", method, "\n")
+  cat("Countries analyzed:", nrow(country_rankings), "\n")
+  cat("Index distribution:\n")
+  cat("  Q1 (25th percentile):", round(quartiles[1], 1), "\n")
+  cat("  Q2 (Median):", round(quartiles[2], 1), "\n") 
+  cat("  Q3 (75th percentile):", round(quartiles[3], 1), "\n")
+  
+  return(list(
+    all_indices = indices,
+    validation = validation_results,
+    recommended_index = recommended_index,
+    country_rankings = country_rankings,
+    method_used = method,
+    n_components = n_components,
+    weights_used = weighting_schemes[[method]],
+    quartiles = quartiles
+  ))
+}
+
+# Construct GVC Index
+gvc_index_results <- construct_gvc_index(pca_results, method = "variance_based")
+
+# Display top and bottom performers
+cat("\n=== GVC READINESS INDEX RESULTS---
+title: "Comprehensive GVC Readiness Analysis: A Multi-Method Statistical Framework"
+subtitle: "Principal Component Analysis with Advanced Validation Techniques"
+author: "GVC Research Team"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    number_sections: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    df_print: paged
+  pdf_document:
+    toc: true
+    number_sections: true
+    latex_engine: xelatex
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 12,
+  fig.height = 8,
+  cache = TRUE,
+  results = 'hold'
+)
+```
+
+# **Executive Summary**
+
+This document presents a comprehensive methodological framework for Global Value Chain (GVC) readiness analysis, implementing advanced statistical techniques with extensive validation procedures. Our approach integrates Principal Component Analysis (PCA) with bootstrap validation, Monte Carlo simulation, cross-validation, spatial econometric analysis, and alternative methodological comparisons to ensure robust and policy-relevant results.
+
+## **Key Methodological Innovations**
+
+- **Multi-Method Validation Convergence**: Integration of multiple validation techniques
+- **Spatial-Economic Integration**: Novel combination of spatial econometrics with PCA
+- **Comprehensive Uncertainty Quantification**: Full uncertainty decomposition framework
+- **Real-Time Sensitivity Analysis**: Dynamic robustness testing capabilities
+
+---
+
+# **1. Environment Setup & Package Loading**
+
+```{r load-packages}
+# Core Analysis Packages
+library(FactoMineR)     # Principal Component Analysis
+library(factoextra)     # PCA visualization and extraction
+library(corrplot)       # Correlation visualization
+library(psych)          # Factor analysis and reliability
+library(GPArotation)    # Factor rotation methods
+
+# Data Manipulation & Import
+library(readxl)         # Excel file reading
+library(dplyr)          # Data manipulation
+library(tidyr)          # Data tidying
+library(stringr)        # String operations
+
+# Advanced Statistical Methods
+library(boot)           # Bootstrap methods
+library(MASS)           # Robust statistical methods
+library(rrcov)          # Robust covariance estimation
+library(elasticnet)     # Sparse PCA
+library(kernlab)        # Kernel methods
+
+# Spatial Analysis
+library(spdep)          # Spatial dependence analysis
+library(spatialreg)     # Spatial regression models
+library(sp)             # Spatial data classes
+library(rgdal)          # Spatial data I/O
+
+# Missing Data Analysis
+library(VIM)            # Visualization and Imputation of Missing values
+library(mice)           # Multiple Imputation by Chained Equations
+library(Hmisc)          # Harrell Miscellaneous
+
+# Visualization
+library(ggplot2)        # Grammar of graphics
+library(plotly)         # Interactive plots
+library(viridis)        # Color scales
+library(RColorBrewer)   # Color palettes
+library(gridExtra)      # Multiple plot arrangements
+
+# Parallel Processing
+library(parallel)       # Parallel computation
+library(foreach)        # Parallel loops
+library(doParallel)     # Parallel backend
+
+# Quality Control & Reproducibility
+library(renv)           # Environment management
+library(here)           # Path management
+
+# Set global options
+options(digits = 4, scipen = 999)
+set.seed(2024)  # For reproducibility
+
+# Setup parallel processing
+n_cores <- parallel::detectCores() - 1
+registerDoParallel(cores = n_cores)
+
+cat("Environment Setup Complete\n")
+cat("Available cores for parallel processing:", n_cores, "\n")
+cat("R Version:", R.version.string, "\n")
+```
+
+---
+
+# **2. Data Loading & Quality Assessment**
+
+## **2.1 Data Import Function**
+
+```{r data-import-function}
+# Advanced Data Loading with Quality Assessment
+load_gvc_data <- function(file_path, sheet_name = NULL) {
+  
+  cat("=== DATA LOADING & QUALITY ASSESSMENT ===\n")
+  
+  tryCatch({
+    # Load data
+    if(is.null(sheet_name)) {
+      data <- readxl::read_excel(file_path)
+    } else {
+      data <- readxl::read_excel(file_path, sheet = sheet_name)
+    }
+    
+    cat("Data loaded successfully\n")
+    cat("Dimensions:", nrow(data), "rows ×", ncol(data), "columns\n")
+    
+    # Basic data info
+    cat("\nColumn names:\n")
+    print(names(data))
+    
+    # Data quality assessment
+    quality_assessment <- list(
+      completeness = round(sum(complete.cases(data)) / nrow(data) * 100, 2),
+      missing_pattern = apply(data, 2, function(x) sum(is.na(x))),
+      numeric_columns = sum(sapply(data, is.numeric)),
+      character_columns = sum(sapply(data, is.character))
+    )
+    
+    cat("\nData Quality Assessment:\n")
+    cat("Completeness:", quality_assessment$completeness, "%\n")
+    cat("Numeric columns:", quality_assessment$numeric_columns, "\n")
+    cat("Character columns:", quality_assessment$character_columns, "\n")
+    
+    # Missing data summary
+    if(any(quality_assessment$missing_pattern > 0)) {
+      cat("\nMissing data by column:\n")
+      missing_summary <- quality_assessment$missing_pattern[quality_assessment$missing_pattern > lar_assessment$missing_pattern > 0]
+      print(missing_summary)
+    }
+    
+    return(list(
+      data = data,
+      quality = quality_assessment,
+      file_info = list(path = file_path, sheet = sheet_name)
+    ))
+    
+  }, error = function(e) {
+    cat("Error loading data:", e$message, "\n")
+    return(NULL)
+  })
+}
+```
+
+## **2.2 Data Loading Implementation**
+
+```{r load-data}
+# Load GVC dataset
+data_path <- "/Volumes/VALEN/Africa:LAC/Insert/READY TO PUBLISH/gvc-readiness-analysis/GVC_Data_Complete.xlsx"
+
+# Check if file exists and load
+if(file.exists(data_path)) {
+  gvc_data_raw <- load_gvc_data(data_path, sheet_name = "Main_Data")
+  
+  if(!is.null(gvc_data_raw)) {
+    data <- gvc_data_raw$data
+    data_quality <- gvc_data_raw$quality
+  } else {
+    stop("Failed to load data")
+  }
+} else {
+  # Create synthetic data for demonstration
+  cat("Creating synthetic GVC dataset for demonstration...\n")
+  
+  set.seed(2024)
+  n_countries <- 120
+  
+  # Create realistic country names
+  countries <- c(
+    paste("Country", sprintf("%03d", 1:n_countries))
+  )
+  
+  # Generate correlated GVC indicators
+  correlation_matrix <- matrix(c(
+    1.0, 0.7, 0.6, 0.5, 0.4,
+    0.7, 1.0, 0.6, 0.5, 0.3,
+    0.6, 0.6, 1.0, 0.4, 0.5,
+    0.5, 0.5, 0.4, 1.0, 0.6,
+    0.4, 0.3, 0.5, 0.6, 1.0
+  ), nrow = 5)
+  
+  # Generate synthetic data
+  synthetic_data <- MASS::mvrnorm(n = n_countries, 
+                                 mu = rep(50, 5), 
+                                 Sigma = correlation_matrix * 100)
+  
+  # Add some realistic noise and ensure positive values
+  synthetic_data <- abs(synthetic_data + rnorm(length(synthetic_data), 0, 5))
+  
+  data <- data.frame(
+    Country = countries,
+    Region = sample(c("Africa", "Asia", "Europe", "Americas", "Oceania"), 
+                   n_countries, replace = TRUE),
+    Logistics_Performance = synthetic_data[,1],
+    Institutional_Quality = synthetic_data[,2],
+    Technology_Readiness = synthetic_data[,3],
+    Human_Capital = synthetic_data[,4],
+    Market_Access = synthetic_data[,5],
+    stringsAsFactors = FALSE
+  )
+  
+  # Add some missing values realistically
+  missing_indices <- sample(1:nrow(data), size = floor(0.05 * nrow(data)))
+  for(i in missing_indices) {
+    col_to_missing <- sample(3:7, 1)
+    data[i, col_to_missing] <- NA
+  }
+  
+  cat("Synthetic dataset created with", nrow(data), "countries\n")
+  
+  # Quality assessment for synthetic data
+  data_quality <- list(
+    completeness = round(sum(complete.cases(data)) / nrow(data) * 100, 2),
+    missing_pattern = apply(data, 2, function(x) sum(is.na(x))),
+    numeric_columns = sum(sapply(data, is.numeric)),
+    character_columns = sum(sapply(data, is.character))
+  )
+}
+
+# Display data structure
+cat("\n=== FINAL DATASET STRUCTURE ===\n")
+str(data)
+head(data, 10)
+```
+
+---
+
+# **3. Data Preprocessing & Preparation**
+
+## **3.1 Advanced Data Preprocessing**
+
+```{r data-preprocessing}
+# Comprehensive Data Preprocessing Function
+preprocess_gvc_data <- function(data) {
+  
+  cat("=== DATA PREPROCESSING ===\n")
+  
+  # Identify numeric columns for analysis
+  numeric_cols <- sapply(data, is.numeric)
+  pca_variables <- names(data)[numeric_cols]
+  
+  cat("Variables selected for PCA:\n")
+  print(pca_variables)
+  
+  # Extract PCA matrix
+  pca_matrix <- data[, pca_variables, drop = FALSE]
+  
+  # Remove rows with all missing values
+  complete_rows <- complete.cases(pca_matrix)
+  pca_matrix <- pca_matrix[complete_rows, ]
+  
+  # Store country information
+  if("Country" %in% names(data)) {
+    countries <- data$Country[complete_rows]
+  } else {
+    countries <- rownames(pca_matrix)
+  }
+  
+  if("Region" %in% names(data)) {
+    regions <- data$Region[complete_rows]
+  } else {
+    regions <- rep("Unknown", nrow(pca_matrix))
+  }
+  
+  cat("Final analysis dataset:\n")
+  cat("Countries:", length(countries), "\n")
+  cat("Variables:", ncol(pca_matrix), "\n")
+  cat("Complete cases:", nrow(pca_matrix), "\n")
+  
+  # Handle remaining missing values with multiple imputation
+  if(any(is.na(pca_matrix))) {
+    cat("\nHandling missing values with multiple imputation...\n")
+    
+    # MICE imputation
+    imputed_data <- mice(pca_matrix, m = 5, method = 'pmm', printFlag = FALSE)
+    pca_matrix <- complete(imputed_data, action = 1)  # Use first imputation
+    
+    cat("Missing values imputed successfully\n")
+  }
+  
+  # Outlier detection
+  outliers <- detect_outliers_comprehensive(pca_matrix)
+  
+  return(list(
+    pca_matrix = pca_matrix,
+    countries = countries,
+    regions = regions,
+    variables = pca_variables,
+    outliers = outliers,
+    preprocessing_info = list(
+      original_rows = nrow(data),
+      final_rows = nrow(pca_matrix),
+      missing_handled = any(is.na(data[, pca_variables])),
+      outliers_detected = length(outliers$outlier_indices)
+    )
+  ))
+}
+
+# Comprehensive Outlier Detection
+detect_outliers_comprehensive <- function(data) {
+  
+  cat("Performing comprehensive outlier detection...\n")
+  
+  outlier_methods <- list()
+  
+  # Method 1: Statistical outliers (Z-score > 3)
+  z_scores <- scale(data)
+  z_outliers <- which(apply(abs(z_scores) > 3, 1, any))
+  outlier_methods$z_score <- z_outliers
+  
+  # Method 2: IQR method
+  iqr_outliers <- c()
+  for(col in 1:ncol(data)) {
+    Q1 <- quantile(data[,col], 0.25, na.rm = TRUE)
+    Q3 <- quantile(data[,col], 0.75, na.rm = TRUE)
+    IQR <- Q3 - Q1
+    lower_bound <- Q1 - 1.5 * IQR
+    upper_bound <- Q3 + 1.5 * IQR
+    col_outliers <- which(data[,col] < lower_bound | data[,col] > upper_bound)
+    iqr_outliers <- unique(c(iqr_outliers, col_outliers))
+  }
+  outlier_methods$iqr <- iqr_outliers
+  
+  # Method 3: Mahalanobis distance
+  if(nrow(data) > ncol(data)) {
+    maha_dist <- mahalanobis(data, colMeans(data), cov(data))
+    maha_outliers <- which(maha_dist > qchisq(0.975, df = ncol(data)))
+    outlier_methods$mahalanobis <- maha_outliers
+  }
+  
+  # Consensus outliers (appear in multiple methods)
+  all_outliers <- unlist(outlier_methods)
+  outlier_counts <- table(all_outliers)
+  consensus_outliers <- as.numeric(names(outlier_counts[outlier_counts >= 2]))
+  
+  cat("Outliers detected:\n")
+  cat("Z-score method:", length(outlier_methods$z_score), "\n")
+  cat("IQR method:", length(outlier_methods$iqr), "\n")
+  if(exists("maha_outliers")) cat("Mahalanobis method:", length(outlier_methods$mahalanobis), "\n")
+  cat("Consensus outliers:", length(consensus_outliers), "\n")
+  
+  return(list(
+    methods = outlier_methods,
+    consensus = consensus_outliers,
+    outlier_indices = consensus_outliers
+  ))
+}
+
+# Execute preprocessing
+processed_data <- preprocess_gvc_data(data)
+pca_matrix <- processed_data$pca_matrix
+countries <- processed_data$countries
+regions <- processed_data$regions
+
+# Display preprocessing results
+cat("\n=== PREPROCESSING RESULTS ===\n")
+cat("Final PCA matrix dimensions:", nrow(pca_matrix), "×", ncol(pca_matrix), "\n")
+cat("Countries included:", length(countries), "\n")
+cat("Outliers detected:", length(processed_data$outliers$consensus), "\n")
+```
+
+---
+
+# **4. PCA Suitability Assessment**
+
+## **4.1 Comprehensive Suitability Testing**
+
+```{r pca-suitability}
+# PCA Suitability Assessment Function
+assess_pca_suitability <- function(data) {
+  
+  cat("=== PCA SUITABILITY ASSESSMENT ===\n")
+  
+  suitability_results <- list()
+  
+  # 1. Kaiser-Meyer-Olkin (KMO) Test
+  kmo_result <- psych::KMO(data)
+  suitability_results$kmo <- kmo_result
+  
+  cat("1. Kaiser-Meyer-Olkin (KMO) Test:\n")
+  cat("   Overall KMO:", round(kmo_result$MSA, 4), "\n")
+  
+  kmo_interpretation <- case_when(
+    kmo_result$MSA >= 0.9 ~ "Marvelous",
+    kmo_result$MSA >= 0.8 ~ "Meritorious", 
+    kmo_result$MSA >= 0.7 ~ "Middling",
+    kmo_result$MSA >= 0.6 ~ "Mediocre",
+    kmo_result$MSA >= 0.5 ~ "Miserable",
+    TRUE ~ "Unacceptable"
+  )
+  cat("   Interpretation:", kmo_interpretation, "\n")
+  
+  # 2. Bartlett's Test of Sphericity
+  bartlett_result <- psych::cortest.bartlett(cor(data), n = nrow(data))
+  suitability_results$bartlett <- bartlett_result
+  
+  cat("\n2. Bartlett's Test of Sphericity:\n")
+  cat("   Chi-square:", round(bartlett_result$chisq, 4), "\n")
+  cat("   p-value:", format(bartlett_result$p.value, scientific = TRUE), "\n")
+  cat("   Interpretation:", ifelse(bartlett_result$p.value < 0.05, 
+                                  "Suitable for PCA", "Not suitable for PCA"), "\n")
+  
+  # 3. Correlation Matrix Properties
+  cor_matrix <- cor(data)
+  det_cor <- det(cor_matrix)
+  suitability_results$correlation <- list(
+    matrix = cor_matrix,
+    determinant = det_cor
+  )
+  
+  cat("\n3. Correlation Matrix Properties:\n")
+  cat("   Determinant:", format(det_cor, scientific = TRUE), "\n")
+  cat("   Interpretation:", ifelse(det_cor > 0.00001, 
+                                  "Suitable for PCA", "Potential multicollinearity"), "\n")
+  
+  # 4. Overall Suitability Score
+  kmo_score <- kmo_result$MSA
+  bartlett_score <- ifelse(bartlett_result$p.value < 0.05, 1, 0)
+  det_score <- ifelse(det_cor > 0.00001, 1, 0)
+  
+  overall_score <- (kmo_score + bartlett_score + det_score) / 3
+  suitability_results$overall_score <- overall_score
+  
+  cat("\n4. Overall Suitability Score:", round(overall_score, 4), "/1.0\n")
+  
+  overall_interpretation <- case_when(
+    overall_score >= 0.8 ~ "Excellent for PCA",
+    overall_score >= 0.6 ~ "Good for PCA",
+    overall_score >= 0.4 ~ "Acceptable for PCA", 
+    TRUE ~ "Poor for PCA"
+  )
+  cat("   Overall Assessment:", overall_interpretation, "\n")
+  
+  return(suitability_results)
+}
+
+# Perform suitability assessment
+suitability_assessment <- assess_pca_suitability(pca_matrix)
+
+# Correlation matrix visualization
+cat("\n=== CORRELATION MATRIX VISUALIZATION ===\n")
+```
+
+```{r correlation-plot, fig.width=10, fig.height=8}
+# Enhanced correlation plot
+cor_matrix <- cor(pca_matrix)
+
+corrplot(cor_matrix, 
+         method = "color",
+         type = "upper",
+         order = "hclust",
+         tl.cex = 0.8,
+         tl.col = "black",
+         tl.srt = 45,
+         addCoef.col = "black",
+         number.cex = 0.7,
+         col = colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))(200),
+         title = "GVC Indicators Correlation Matrix",
+         mar = c(0,0,2,0))
+```
+
+---
+
+# **5. Principal Component Analysis Implementation**
+
+## **5.1 Core PCA Analysis**
+
+```{r pca-analysis}
+# Comprehensive PCA Implementation
+perform_comprehensive_pca <- function(data, countries, regions) {
+  
+  cat("=== PRINCIPAL COMPONENT ANALYSIS ===\n")
+  
+  # Standard PCA
+  pca_result <- FactoMineR::PCA(data, scale.unit = TRUE, graph = FALSE)
+  
+  # Extract key components
+  eigenvalues <- pca_result$eig
+  variance_explained <- pca_result$eig[,2]
+  cumulative_variance <- cumsum(variance_explained)
+  
+  # Component retention analysis
+  retention_analysis <- analyze_component_retention(pca_result)
+  
+  # Variable contributions
+  variable_contributions <- pca_result$var$contrib
+  variable_loadings <- pca_result$var$coord
+  
+  # Individual coordinates (scores)
+  individual_scores <- pca_result$ind$coord
+  rownames(individual_scores) <- countries
+  
+  # Quality of representation
+  variable_quality <- pca_result$var$cos2
+  individual_quality <- pca_result$ind$cos2
+  
+  cat("PCA Results Summary:\n")
+  cat("Total components:", nrow(eigenvalues), "\n")
+  cat("Variance explained by PC1:", round(variance_explained[1], 2), "%\n")
+  cat("Variance explained by PC2:", round(variance_explained[2], 2), "%\n")
+  cat("Cumulative variance (PC1+PC2):", round(cumulative_variance[2], 2), "%\n")
+  
+  # Recommended number of components
+  recommended_components <- retention_analysis$recommended
+  cat("Recommended components:", recommended_components, "\n")
+  cat("Cumulative variance (recommended):", 
+      round(cumulative_variance[recommended_components], 2), "%\n")
+  
+  return(list(
+    pca_result = pca_result,
+    eigenvalues = eigenvalues,
+    variance_explained = variance_explained,
+    cumulative_variance = cumulative_variance,
+    retention_analysis = retention_analysis,
+    variable_contributions = variable_contributions,
+    variable_loadings = variable_loadings,
+    individual_scores = individual_scores,
+    variable_quality = variable_quality,
+    individual_quality = individual_quality,
+    countries = countries,
+    regions = regions,
+    recommended_components = recommended_components
+  ))
+}
+
+# Component Retention Analysis
+analyze_component_retention <- function(pca_result) {
+  
+  eigenvalues <- pca_result$eig[,1]
+  variance_explained <- pca_result$eig[,2]
+  cumulative_variance <- cumsum(variance_explained)
+  
+  retention_criteria <- list()
+  
+  # Kaiser criterion (eigenvalue > 1)
+  kaiser_components <- sum(eigenvalues > 1)
+  retention_criteria$kaiser <- kaiser_components
+  
+  # Scree plot elbow (simple implementation)
+  if(length(eigenvalues) >= 3) {
+    # Calculate second derivative to find elbow
+    second_deriv <- diff(eigenvalues, differences = 2)
+    elbow_point <- which.max(second_deriv) + 1
+    retention_criteria$scree <- min(elbow_point, length(eigenvalues))
+  } else {
+    retention_criteria$scree <- length(eigenvalues)
+  }
+  
+  # 60% variance threshold
+  variance_60 <- which(cumulative_variance >= 60)[1]
+  if(is.na(variance_60)) variance_60 <- length(eigenvalues)
+  retention_criteria$variance_60 <- variance_60
+  
+  # 80% variance threshold  
+  variance_80 <- which(cumulative_variance >= 80)[1]
+  if(is.na(variance_80)) variance_80 <- length(eigenvalues)
+  retention_criteria$variance_80 <- variance_80
+  
+  # Consensus recommendation (most conservative)
+  recommended <- min(kaiser_components, retention_criteria$scree, variance_60)
+  recommended <- max(recommended, 2)  # Minimum 2 components for interpretation
+  
+  cat("\nComponent Retention Analysis:\n")
+  cat("Kaiser criterion (λ > 1):", kaiser_components, "components\n")
+  cat("Scree plot elbow:", retention_criteria$scree, "components\n") 
+  cat("60% variance threshold:", variance_60, "components\n")
+  cat("80% variance threshold:", variance_80, "components\n")
+  cat("Recommended (conservative):", recommended, "components\n")
+  
+  return(list(
+    criteria = retention_criteria,
+    recommended = recommended,
+    eigenvalues = eigenvalues,
+    variance_explained = variance_explained,
+    cumulative_variance = cumulative_variance
+  ))
+}
+
+# Execute PCA analysis
+pca_results <- perform_comprehensive_pca(pca_matrix, countries, regions)
+```
+
+## **5.2 PCA Visualization**
+
+```{r pca-visualizations, fig.width=14, fig.height=10}
+# Comprehensive PCA Visualizations
+
+# 1. Scree Plot
+scree_plot <- fviz_eig(pca_results$pca_result, 
+                       addlabels = TRUE, 
+                       ylim = c(0, max(pca_results$variance_explained) + 10),
+                       title = "Scree Plot: Variance Explained by Components",
+                       subtitle = paste("Kaiser criterion suggests", 
+                                       pca_results$retention_analysis$criteria$kaiser, 
+                                       "components")) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5))
+
+# 2. Variables Contribution Plot
+contrib_plot <- fviz_contrib(pca_results$pca_result, 
+                            choice = "var", 
+                            axes = 1:2,
+                            title = "Variable Contributions to PC1 and PC2",
+                            subtitle = "Red dashed line indicates average contribution") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# 3. PCA Biplot
+biplot <- fviz_pca_biplot(pca_results$pca_result,
+                         geom.ind = "point",
+                         col.ind = factor(regions),
+                         palette = "Set2",
+                         addEllipses = TRUE,
+                         ellipse.level = 0.68,
+                         title = "PCA Biplot: Countries and Variables",
+                         subtitle = "Countries colored by region with 68% confidence ellipses") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# 4. Variables PCA Plot
+var_plot <- fviz_pca_var(pca_results$pca_result,
+                        col.var = "contrib",
+                        gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                        title = "Variables PCA Plot",
+                        subtitle = "Variables colored by contribution to PC1 and PC2") +
+  theme_minimal()
+
+# Arrange plots
+grid.arrange(scree_plot, contrib_plot, biplot, var_plot, nrow = 2, ncol = 2)
+```
+
+---
+
+# **6. Bootstrap Validation**
+
+## **6.1 Bootstrap Implementation**
+
+```{r bootstrap-validation}
+# Advanced Bootstrap Validation
+perform_bootstrap_validation <- function(data, n_bootstrap = 2000, confidence = 0.95) {
+  
+  cat("=== BOOTSTRAP VALIDATION ===\n")
+  cat("Running", n_bootstrap, "bootstrap iterations...\n")
+  
+  # Parallel bootstrap execution
+  bootstrap_results <- foreach(i = 1:n_bootstrap, 
+                              .combine = 'rbind',
+                              .packages = c('FactoMineR')) %dopar% {
+    
+    # Bootstrap sample
+    boot_indices <- sample(nrow(data), replace = TRUE)
+    boot_data <- data[boot_indices, ]
+    
+    # PCA on bootstrap sample
+    boot_pca <- FactoMineR::PCA(boot_data, scale.unit = TRUE, graph = FALSE)
+    
+    # Extract key metrics
+    eigenvalues <- boot_pca$eig[1:min(5, nrow(boot_pca$eig)), 1]
+    variance_explained <- boot_pca$eig[1:min(5, nrow(boot_pca$eig)), 2]
+    
+    # Pad with NAs if fewer than 5 components
+    if(length(eigenvalues) < 5) {
+      eigenvalues <- c(eigenvalues, rep(NA, 5 - length(eigenvalues)))
+      variance_explained <- c(variance_explained, rep(NA, 5 - length(variance_explained)))
+    }
+    
+    return(c(eigenvalues, variance_explained))
+  }
+  
+  # Process bootstrap results
+  n_components <- min(5, ncol(pca_results$eigenvalues))
+  eigenvalue_boots <- bootstrap_results[, 1:n_components]
+  variance_boots <- bootstrap_results[, (n_components+1):(2*n_components)]
+  
+  # Calculate confidence intervals
+  alpha <- 1 - confidence
+  
+  eigenvalue_ci <- apply(eigenvalue_boots, 2, function(x) {
+    quantile(x, c(alpha/2, 1-alpha/2), na.rm = TRUE)
+  })
+  
+  variance_ci <- apply(variance_boots, 2, function(x) {
+    quantile(x, c(alpha/2, 1-alpha/2), na.rm = TRUE)
+  })
+  
+  # Bootstrap stability metrics
+  eigenvalue_cv <- apply(eigenvalue_boots, 2, function(x) sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE))
+  variance_cv <- apply(variance_boots, 2, function(x) sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE))
+  
+  cat("Bootstrap validation completed\n")
+  cat("Eigenvalue stability (CV for PC1):", round(eigenvalue_cv[1], 4), "\n")
+  cat("Variance stability (CV for PC1):", round(variance_cv[1], 4), "\n")
+  
+  # Interpretation
+  stability_interpretation <- case_when(
+    eigenvalue_cv[1] < 0.1 ~ "Excellent stability",
+    eigenvalue_cv[1] < 0.2 ~ "Good stability", 
+    eigenvalue_cv[1] < 0.3 ~ "Moderate stability",
+    TRUE ~ "Poor stability"
+  )
+  
+  cat("Stability assessment:", stability_interpretation, "\n")
+  
+  return(list(
+    bootstrap_results = bootstrap_results,
+    eigenvalue_boots = eigenvalue_boots,
+    variance_boots = variance_boots,
+    eigenvalue_ci = eigenvalue_ci,
+    variance_ci = variance_ci,
+    eigenvalue_cv = eigenvalue_cv,
+    variance_cv = variance_cv,
+    stability_score = 1 - mean(eigenvalue_cv, na.rm = TRUE),
+    n_bootstrap = n_bootstrap,
+    confidence = confidence
+  ))
+}
+
+# Execute bootstrap validation
+bootstrap_results <- perform_bootstrap_validation(pca_matrix, n_bootstrap = 2000)
+
+# Display bootstrap confidence intervals
+cat("\n=== BOOTSTRAP CONFIDENCE INTERVALS ===\n")
+cat("95% Confidence Intervals for Eigenvalues:\n")
+for(i in 1:min(3, ncol(bootstrap_results$eigenvalue_ci))) {
+  cat("PC", i, ": [", 
+      round(bootstrap_results$eigenvalue_ci[1,i], 3), ", ",
+      round(bootstrap_results$eigenvalue_ci[2,i], 3), "]\n")
+}
+```
+
+## **6.2 Bootstrap Visualization**
+
+```{r bootstrap-plots, fig.width=12, fig.height=8}
+# Bootstrap Results Visualization
+
+# 1. Eigenvalue bootstrap distribution
+eigenvalue_data <- data.frame(
+  PC1 = bootstrap_results$eigenvalue_boots[,1],
+  PC2 = bootstrap_results$eigenvalue_boots[,2],
+  PC3 = bootstrap_results$eigenvalue_boots[,3]
+) %>%
+  pivot_longer(everything(), names_to = "Component", values_to = "Eigenvalue")
+
+eigenvalue_plot <- ggplot(eigenvalue_data, aes(x = Eigenvalue, fill = Component)) +
+  geom_histogram(alpha = 0.7, bins = 50) +
+  facet_wrap(~Component, scales = "free") +
+  labs(title = "Bootstrap Distribution of Eigenvalues",
+       subtitle = paste("Based on", bootstrap_results$n_bootstrap, "bootstrap samples"),
+       x = "Eigenvalue", y = "Frequency") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+
+# 2. Variance explained bootstrap distribution  
+variance_data <- data.frame(
+  PC1 = bootstrap_results$variance_boots[,1],
+  PC2 = bootstrap_results$variance_boots[,2], 
+  PC3 = bootstrap_results$variance_boots[,3]
+) %>%
+  pivot_longer(everything(), names_to = "Component", values_to = "Variance")
+
+variance_plot <- ggplot(variance_data, aes(x = Variance, fill = Component)) +
+  geom_histogram(alpha = 0.7, bins = 50) +
+  facet_wrap(~Component, scales = "free") +
+  labs(title = "Bootstrap Distribution of Variance Explained",
+       subtitle = "Percentage of total variance explained by each component",
+       x = "Variance Explained (%)", y = "Frequency") +
+  theme_minimal() +
+  scale_fill_viridis_d()
+
+# Arrange plots
+grid.arrange(eigenvalue_plot, variance_plot, nrow = 2)
+```
+
+---
+
+# **7. Monte Carlo Simulation**
+
+## **7.1 Monte Carlo Implementation**
+
+```{r monte-carlo-simulation}
+# Monte Carlo Robustness Testing
+perform_monte_carlo_validation <- function(data, n_simulations = 5000) {
+  
+  cat("=== MONTE CARLO VALIDATION ===\n")
+  cat("Running", n_simulations, "Monte Carlo simulations...\n")
+  
+  # Original PCA results for comparison
+  original_pca <- FactoMineR::PCA(data, scale.unit = TRUE, graph = FALSE)
+  original_eigenvalues <- original_pca$eig[1:3, 1]
+  original_variance <- original_pca$eig[1:3, 2]
+  
+  # Parallel Monte Carlo execution
+  mc_results <- foreach(i = 1:n_simulations,
+                       .combine = 'rbind',
+                       .packages = c('FactoMineR')) %dopar% {
+    
+    # Scenario selection (random)
+    scenario <- sample(1:4, 1)
+    
+    scenario_data <- switch(scenario,
+      # Scenario 1: Gaussian noise addition (5% of std dev)
+      "1" = {
+        noise_level <- 0.05
+        noise_matrix <- matrix(rnorm(prod(dim(data)), 0, 
+                                   apply(data, 2, sd) * noise_level), 
+                              nrow = nrow(data))
+        data + noise_matrix
+      },
+      
+      # Scenario 2: Random missing data (10% missing rate)
+      "2" = {
+        temp_data <- data
+        n_missing <- floor(0.1 * prod(dim(data)))
+        missing_indices <- sample(prod(dim(data)), n_missing)
+        temp_data[missing_indices] <- NA
+        
+        # Simple imputation with column means
+        for(col in 1:ncol(temp_data)) {
+          temp_data[is.na(temp_data[,col]), col] <- mean(temp_data[,col], na.rm = TRUE)
+        }
+        temp_data
+      },
+      
+      # Scenario 3: Bootstrap subsample (80% of data)
+      "3" = {
+        subsample_size <- floor(0.8 * nrow(data))
+        subsample_indices <- sample(nrow(data), subsample_size)
+        data[subsample_indices, ]
+      },
+      
+      # Scenario 4: Outlier contamination (5% extreme values)
+      "4" = {
+        temp_data <- data
+        n_outliers <- floor(0.05 * nrow(data))
+        outlier_indices <- sample(nrow(data), n_outliers)
+        
+        for(idx in outlier_indices) {
+          col_to_modify <- sample(ncol(data), 1)
+          # Add extreme value (5 standard deviations)
+          temp_data[idx, col_to_modify] <- temp_data[idx, col_to_modify] + 
+                                          5 * sd(data[, col_to_modify]) * sample(c(-1, 1), 1)
+        }
+        temp_data
+      }
+    )
+    
+    # Run PCA on scenario data
+    tryCatch({
+      scenario_pca <- FactoMineR::PCA(scenario_data, scale.unit = TRUE, graph = FALSE)
+      eigenvalues <- scenario_pca$eig[1:3, 1]
+      variance_explained <- scenario_pca$eig[1:3, 2]
+      
+      return(c(scenario, eigenvalues, variance_explained))
+    }, error = function(e) {
+      # Return NAs if PCA fails
+      return(c(scenario, rep(NA, 6)))
+    })
+  }
+  
+  # Process results
+  mc_scenarios <- mc_results[, 1]
+  mc_eigenvalues <- mc_results[, 2:4]
+  mc_variance <- mc_results[, 5:7]
+  
+  # Remove failed simulations
+  valid_sims <- complete.cases(mc_results)
+  mc_scenarios <- mc_scenarios[valid_sims]
+  mc_eigenvalues <- mc_eigenvalues[valid_sims, ]
+  mc_variance <- mc_variance[valid_sims, ]
+  
+  # Calculate robustness metrics
+  eigenvalue_stability <- apply(mc_eigenvalues, 2, function(x) {
+    sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+  })
+  
+  variance_stability <- apply(mc_variance, 2, function(x) {
+    sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+  })
+  
+  # Scenario-specific analysis
+  scenario_results <- list()
+  for(s in 1:4) {
+    scenario_mask <- mc_scenarios == s
+    if(sum(scenario_mask) > 10) {  # Need sufficient samples
+      scenario_results[[s]] <- list(
+        eigenvalue_mean = colMeans(mc_eigenvalues[scenario_mask, ], na.rm = TRUE),
+        eigenvalue_sd = apply(mc_eigenvalues[scenario_mask, ], 2, sd, na.rm = TRUE),
+        variance_mean = colMeans(mc_variance[scenario_mask, ], na.rm = TRUE),
+        variance_sd = apply(mc_variance[scenario_mask, ], 2, sd, na.rm = TRUE),
+        n_simulations = sum(scenario_mask)
+      )
+    }
+  }
+  
+  # Overall robustness score
+  robustness_score <- 1 - mean(eigenvalue_stability, na.rm = TRUE)
+  
+  cat("Monte Carlo validation completed\n")
+  cat("Valid simulations:", sum(valid_sims), "/", n_simulations, "\n")
+  cat("PC1 eigenvalue stability (CV):", round(eigenvalue_stability[1], 4), "\n")
+  cat("Overall robustness score:", round(robustness_score, 4), "\n")
+  
+  robustness_interpretation <- case_when(
+    robustness_score > 0.8 ~ "Excellent robustness",
+    robustness_score > 0.6 ~ "Good robustness",
+    robustness_score > 0.4 ~ "Moderate robustness", 
+    TRUE ~ "Poor robustness"
+  )
+  
+  cat("Robustness assessment:", robustness_interpretation, "\n")
+  
+  return(list(
+    mc_results = mc_results,
+    mc_scenarios = mc_scenarios,
+    mc_eigenvalues = mc_eigenvalues,
+    mc_variance = mc_variance,
+    scenario_results = scenario_results,
+    eigenvalue_stability = eigenvalue_stability,
+    variance_stability = variance_stability,
+    robustness_score = robustness_score,
+    original_eigenvalues = original_eigenvalues,
+    original_variance = original_variance,
+    n_simulations = n_simulations,
+    valid_simulations = sum(valid_sims)
+  ))
+}
+
+# Execute Monte Carlo validation
+mc_results <- perform_monte_carlo_validation(pca_matrix, n_simulations = 5000)
+```
+
+## **7.2 Monte Carlo Visualization**
+
+```{r monte-carlo-plots, fig.width=14, fig.height=10}
+# Monte Carlo Results Visualization
+
+# Prepare data for visualization
+scenario_names <- c("Gaussian Noise", "Missing Data", "Subsampling", "Outlier Contamination")
+mc_data <- data.frame(
+  Scenario = factor(mc_results$mc_scenarios, labels = scenario_names),
+  PC1_Eigenvalue = mc_results$mc_eigenvalues[,1],
+  PC2_Eigenvalue = mc_results$mc_eigenvalues[,2],
+  PC1_Variance = mc_results$mc_variance[,1],
+  PC2_Variance = mc_results$mc_variance[,2]
+)
+
+# 1. Eigenvalue robustness by scenario
+eigenvalue_plot <- ggplot(mc_data, aes(x = Scenario, y = PC1_Eigenvalue, fill = Scenario)) +
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
+  geom_hline(yintercept = mc_results$original_eigenvalues[1], 
+             linetype = "dashed", color = "red", size = 1) +
+  labs(title = "PC1 Eigenvalue Robustness Across Scenarios",
+       subtitle = "Red line indicates original eigenvalue",
+       x = "Scenario", y = "PC1 Eigenvalue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  scale_fill_viridis_d()
+
+# 2. Variance explained robustness
+variance_plot <- ggplot(mc_data, aes(x = Scenario, y = PC1_Variance, fill = Scenario)) +
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
+  geom_hline(yintercept = mc_results$original_variance[1], 
+             linetype = "dashed", color = "red", size = 1) +
+  labs(title = "PC1 Variance Explained Robustness",
+       subtitle = "Percentage of variance explained by first component",
+       x = "Scenario", y = "Variance Explained (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  scale_fill_viridis_d()
+
+# 3. Stability comparison across components
+stability_data <- data.frame(
+  Component = paste0("PC", 1:3),
+  Eigenvalue_CV = mc_results$eigenvalue_stability,
+  Variance_CV = mc_results$variance_stability
+) %>%
+  pivot_longer(cols = c(Eigenvalue_CV, Variance_CV), 
+               names_to = "Metric", values_to = "CV")
+
+stability_plot <- ggplot(stability_data, aes(x = Component, y = CV, fill = Metric)) +
+  geom_col(position = "dodge", alpha = 0.8) +
+  labs(title = "Component Stability Analysis",
+       subtitle = "Coefficient of Variation (lower is more stable)",
+       x = "Principal Component", y = "Coefficient of Variation") +
+  theme_minimal() +
+  scale_fill_manual(values = c("#E69F00", "#56B4E9"))
+
+# 4. Scenario impact summary
+scenario_summary <- mc_data %>%
+  group_by(Scenario) %>%
+  summarise(
+    Mean_PC1_Eigenvalue = mean(PC1_Eigenvalue, na.rm = TRUE),
+    SD_PC1_Eigenvalue = sd(PC1_Eigenvalue, na.rm = TRUE),
+    Mean_PC1_Variance = mean(PC1_Variance, na.rm = TRUE),
+    SD_PC1_Variance = sd(PC1_Variance, na.rm = TRUE),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    Eigenvalue_Impact = abs(Mean_PC1_Eigenvalue - mc_results$original_eigenvalues[1]),
+    Variance_Impact = abs(Mean_PC1_Variance - mc_results$original_variance[1])
+  )
+
+impact_plot <- ggplot(scenario_summary, aes(x = Scenario)) +
+  geom_col(aes(y = Eigenvalue_Impact), fill = "#E69F00", alpha = 0.7) +
+  labs(title = "Scenario Impact on PC1 Eigenvalue",
+       subtitle = "Absolute deviation from original eigenvalue",
+       x = "Scenario", y = "Impact (Absolute Deviation)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Arrange plots
+grid.arrange(eigenvalue_plot, variance_plot, stability_plot, impact_plot, nrow = 2, ncol = 2)
+```
+
+---
+
+# **8. Cross-Validation**
+
+## **8.1 K-Fold Cross-Validation Implementation**
+
+```{r cross-validation}
+# Advanced K-Fold Cross-Validation for PCA
+perform_cv_validation <- function(data, k_folds = 10) {
+  
+  cat("=== CROSS-VALIDATION ANALYSIS ===\n")
+  cat("Performing", k_folds, "-fold cross-validation...\n")
+  
+  n <- nrow(data)
+  fold_size <- floor(n / k_folds)
+  
+  # Create stratified folds (maintain distribution characteristics)
+  # Simple stratification based on first principal component
+  temp_pca <- FactoMineR::PCA(data, scale.unit = TRUE, graph = FALSE)
+  pc1_scores <- temp_pca$ind$coord[,1]
+  pc1_quantiles <- cut(pc1_scores, breaks = k_folds, labels = FALSE)
+  
+  # Create folds maintaining distribution
+  folds <- list()
+  for(i in 1:k_folds) {
+    folds[[i]] <- which(pc1_quantiles == i)
+  }
+  
+  # Ensure all observations are assigned
+  unassigned <- setdiff(1:n, unlist(folds))
+  if(length(unassigned) > 0) {
+    for(i in seq_along(unassigned)) {
+      fold_idx <- ((i - 1) %% k_folds) + 1
+      folds[[fold_idx]] <- c(folds[[fold_idx]], unassigned[i])
+    }
+  }
+  
+  cv_results <- list()
+  
+  for(fold in 1:k_folds) {
+    cat("Processing fold", fold, "of", k_folds, "...\n")
+    
+    # Training and testing sets
+    test_indices <- folds[[fold]]
+    train_indices <- setdiff(1:n, test_indices)
+    
+    train_data <- data[train_indices, ]
+    test_data <- data[test_indices, ]
+    
+    # Fit PCA on training data
+    train_pca <- FactoMineR::PCA(train_data, scale.unit = TRUE, graph = FALSE)
+    
+    # Project test data onto training PCA space
+    # Standardize test data using training means and sds
+    train_means <- colMeans(train_data)
+    train_sds <- apply(train_data, 2, sd)
+    
+    test_scaled <- scale(test_data, center = train_means, scale = train_sds)
+    
+    # Project onto training PCA space
+    test_projection <- test_scaled %*% train_pca$var$coord
+    
+    # Calculate reconstruction error
+    # Reconstruct test data from first few components
+    n_components <- min(3, ncol(train_pca$var$coord))
+    reconstructed <- test_projection[, 1:n_components] %*% t(train_pca$var$coord[, 1:n_components])
+    
+    # Add back means
+    reconstructed_original <- scale(reconstructed, center = FALSE, scale = 1/train_sds)
+    reconstructed_original <- scale(reconstructed_original, center = -train_means, scale = FALSE)
+    
+    # Calculate reconstruction error (RMSE)
+    reconstruction_error <- sqrt(mean((test_data - reconstructed_original)^2, na.rm = TRUE))
+    
+    # Variance explained on test set
+    test_var_explained <- apply(test_projection^2, 2, sum) / sum(test_scaled^2)
+    
+    cv_results[[fold]] <- list(
+      fold_number = fold,
+      train_size = nrow(train_data),
+      test_size = nrow(test_data),
+      reconstruction_error = reconstruction_error,
+      test_variance_explained = test_var_explained[1:n_components],
+      train_eigenvalues = train_pca$eig[1:n_components, 1],
+      train_variance = train_pca$eig[1:n_components, 2]
+    )
+  }
+  
+  # Aggregate results
+  reconstruction_errors <- sapply(cv_results, function(x) x$reconstruction_error)
+  mean_reconstruction_error <- mean(reconstruction_errors)
+  sd_reconstruction_error <- sd(reconstruction_errors)
+  
+  # Aggregate variance explained
+  test_variances <- t(sapply(cv_results, function(x) x$test_variance_explained))
+  mean_test_variance <- colMeans(test_variances, na.rm = TRUE)
+  sd_test_variance <- apply(test_variances, 2, sd, na.rm = TRUE)
+  
+  # Training consistency
+  train_eigenvalues <- t(sapply(cv_results, function(x) x$train_eigenvalues))
+  eigenvalue_consistency <- apply(train_eigenvalues, 2, function(x) sd(x) / mean(x))
+  
+  # Generalizability score
+  generalizability_score <- 1 / (1 + mean_reconstruction_error)
+  
+  cat("Cross-validation completed\n")
+  cat("Mean reconstruction error:", round(mean_reconstruction_error, 4), "\n")
+  cat("Standard deviation of reconstruction error:", round(sd_reconstruction_error, 4), "\n")
+  cat("Mean test variance explained (PC1):", round(mean_test_variance[1] * 100, 2), "%\n")
+  cat("Eigenvalue consistency (CV for PC1):", round(eigenvalue_consistency[1], 4), "\n")
+  cat("Generalizability score:", round(generalizability_score, 4), "\n")
+  
+  generalizability_interpretation <- case_when(
+    generalizability_score > 0.8 ~ "Excellent generalizability",
+    generalizability_score > 0.6 ~ "Good generalizability",
+    generalizability_score > 0.4 ~ "Moderate generalizability",
+    TRUE ~ "Poor generalizability"
+  )
+  
+  cat("Generalizability assessment:", generalizability_interpretation, "\n")
+  
+  return(list(
+    fold_results = cv_results,
+    reconstruction_errors = reconstruction_errors,
+    mean_reconstruction_error = mean_reconstruction_error,
+    sd_reconstruction_error = sd_reconstruction_error,
+    test_variances = test_variances,
+    mean_test_variance = mean_test_variance,
+    sd_test_variance = sd_test_variance,
+    train_eigenvalues = train_eigenvalues,
+    eigenvalue_consistency = eigenvalue_consistency,
+    generalizability_score = generalizability_score,
+    k_folds = k_folds
+  ))
+}
+
+# Execute cross-validation
+cv_results <- perform_cv_validation(pca_matrix, k_folds = 10)
+```
+
+## **8.2 Cross-Validation Visualization**
+
+```{r cv-plots, fig.width=12, fig.height=8}
+# Cross-Validation Results Visualization
+
+# 1. Reconstruction error across folds
+reconstruction_data <- data.frame(
+  Fold = 1:cv_results$k_folds,
+  Reconstruction_Error = cv_results$reconstruction_errors
+)
+
+reconstruction_plot <- ggplot(reconstruction_data, aes(x = Fold, y = Reconstruction_Error)) +
+  geom_point(size = 3, color = "#E69F00") +
+  geom_line(color = "#E69F00", alpha = 0.6) +
+  geom_hline(yintercept = cv_results$mean_reconstruction_error, 
+             linetype = "dashed", color = "red") +
+  geom_hline(yintercept = cv_results$mean_reconstruction_error + cv_results$sd_reconstruction_error,
+             linetype = "dotted", color = "red", alpha = 0.7) +
+  geom_hline(yintercept = cv_results$mean_reconstruction_error - cv_results$sd_reconstruction_error,
+             linetype = "dotted", color = "red", alpha = 0.7) +
+  labs(title = "Cross-Validation: Reconstruction Error by Fold",
+       subtitle = "Red dashed line: mean error, dotted lines: ±1 SD",
+       x = "Fold Number", y = "Reconstruction Error (RMSE)") +
+  theme_minimal()
+
+# 2. Test variance explained across folds
+variance_data <- data.frame(
+  Fold = rep(1:cv_results$k_folds, 3),
+  Component = rep(paste0("PC", 1:3), each = cv_results$k_folds),
+  Variance_Explained = as.vector(cv_results$test_variances * 100)
+)
+
+variance_plot <- ggplot(variance_data, aes(x = Fold, y = Variance_Explained, color = Component)) +
+  geom_point(size = 2) +
+  geom_line(alpha = 0.7) +
+  labs(title = "Test Set Variance Explained by Fold",
+       subtitle = "Variance explained by each component on test data",
+       x = "Fold Number", y = "Variance Explained (%)") +
+  theme_minimal() +
+  scale_color_viridis_d()
+
+# 3. Training eigenvalue consistency
+eigenvalue_data <- data.frame(
+  Fold = rep(1:cv_results$k_folds, 3),
+  Component = rep(paste0("PC", 1:3), each = cv_results$k_folds),
+  Eigenvalue = as.vector(cv_results$train_eigenvalues)
+)
+
+eigenvalue_plot <- ggplot(eigenvalue_data, aes(x = Component, y = Eigenvalue, fill = Component)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Training Eigenvalue Consistency Across Folds",
+       subtitle = "Distribution of eigenvalues from training sets",
+       x = "Principal Component", y = "Eigenvalue") +
+  theme_minimal() +
+  scale_fill_viridis_d() +
+  theme(legend.position = "none")
+
+# 4. Cross-validation summary metrics
+summary_metrics <- data.frame(
+  Metric = c("Mean Reconstruction Error", "SD Reconstruction Error", 
+             "Mean PC1 Test Variance", "PC1 Eigenvalue CV", "Generalizability Score"),
+  Value = c(cv_results$mean_reconstruction_error, 
+            cv_results$sd_reconstruction_error,
+            cv_results$mean_test_variance[1] * 100,
+            cv_results$eigenvalue_consistency[1],
+            cv_results$generalizability_score),
+  Interpretation = c("Lower is better", "Lower is better", "Higher is better", 
+                    "Lower is better", "Higher is better")
+)
+
+summary_plot <- ggplot(summary_metrics, aes(x = reorder(Metric, Value), y = Value, 
+                                            fill = Interpretation)) +
+  geom_col(alpha = 0.8) +
+  coord_flip() +
+  labs(title = "Cross-Validation Summary Metrics",
+       x = "Metric", y = "Value") +
+  theme_minimal() +
+  scale_fill_manual(values = c("Higher is better" = "#56B4E9", 
+                              "Lower is better" = "#E69F00"))
+
+# Arrange plots
+grid.arrange(reconstruction_plot, variance_plot, eigenvalue_plot, summary_plot, nrow = 2, ncol = 2)
+```
+
+---
+
+# **9. GVC Readiness Index Construction**
+
+## **9.1 Index Construction Function**
+
+```{r index-construction}
+# Advanced GVC Readiness Index Construction
+construct_gvc_index <- function(pca_results, method = "variance_weighted") {
+  
+  cat("=== GVC READINESS INDEX CONSTRUCTION ===\n")
+  
+  # Extract components and weights
+  n_components <- pca_results$recommended_components
+  individual_scores <- pca_results$individual_scores[, 1:n_components]
+  variance_explained <- pca_results$variance_explained[1:n_components]
+  
+  cat("Using", n_components, "components for index construction\n")
+  cat("Cumulative variance explained:", 
+      round(sum(variance_explained), 2), "%\n")
+  
+  # Multiple weighting schemes
+  weighting_schemes <- list(
+    # Variance-based weights (default)
+    variance_based = variance_explained / sum(variance_explained),
+    
+    # Equal weights
+    equal_weights = rep(1/n_components, n_components),
+    
+    # Declining weights (geometric progression)
+    declining = (0.5^(0:(n_components-1))) / sum(0.5^(0:(n_components-1))),
+    
+    # First component only
+    first_component = c(1, rep(0, n_components-1))
+  )
+  
+  # Calculate indices for each weighting scheme
+  indices <- list()
+  validation_results <- list()
+  
+  for(scheme_name in names(weighting_schemes)) {
+    weights <- weighting_schemes[[scheme_name]]
+    
+    # Calculate weighted index
+    if(n_components == 1) {
+      raw_index <- individual_scores[,1]
+    } else {
+      raw_index <- as.vector(individual_scores %*% weights)
+    }
+    
+    # Normalize to 0-100 scale
+    normalized_index <- 100 * (raw_index - min(raw_index)) / (max(raw_index) - min(raw_index))
+    
+    # Store results
+    indices[[scheme_name]] <- list(
+      raw = raw_index,
+      normalized = normalized_index,
+      weights = weights
+    )
+    
+    # Validation metrics
+    validation_results[[scheme_name]] <- list(
+      mean = mean(normalized_index),
+      sd = sd(normalized_index),
+      min = min(normalized_index),
+      max = max(normalized_index),
+      skewness = moments::skewness(normalized_index),
+      kurtosis = moments::kurtosis(normalized_index),
+      normality_test = shapiro.test(normalized_index)$p.value
+    )
+    
+    cat("\n", scheme_name, "weighting:\n")
+    cat("  Weights:", paste(round(weights, 3), collapse = ", "), "\n")
+    cat("  Index range:", round(min(normalized_index), 1), "-", 
+        round(max(normalized_index), 1), "\n")
+    cat("  Mean ± SD:", round(mean(normalized_index), 1), "±", 
+        round(sd(normalized_index), 1), "\n")
+  }
+  
+  # Select recommended index (variance-based by default)
+  recommended_index <- indices[[method]]$normalized
+  
+  # Create country rankings
+  country_rankings <- data.frame(
+    Country = pca_results$countries,
+    Region = pca_results$regions,
+    GVC_Index = recommended_index,
+    Rank = rank(-recommended_index),
+    stringsAsFactors = FALSE
+  ) %>%
+    arrange(desc(GVC_Index))
+  
+  # Quartile analysis
+  quartiles <- quantile(recommended_index, c(0.25, 0.5, 0.75))
+  country_rankings$Quartile <- cut(country_rankings$GVC_Index,
+                                  breaks = c(0, quartiles, 100),
+                                  labels = c("Q1 (Lowest)", "Q2", "Q3", "Q4 (Highest)"),
+                                  include.lowest = TRUE)
+  
+  cat("\n=== INDEX VALIDATION SUMMARY ===\n")
+  cat("Recommended method:", method, "\n")
+  cat("Countries analyzed:", nrow(country_rankings), "\n")
+  cat("Index distribution:\n")
+  cat("  Q1 (25th percentile):", round(quartiles[1], 1), "\n")
+  cat("  Q2 (Median):", round(quartiles[2], 1), "\n") 
+  cat("  Q3 (75th percentile):", round(quartiles[3], 1), "\n")
+  
+  return(list(
+    all_indices = indices,
+    validation = validation_results,
+    recommended_index = recommended_index,
+    country_rankings = country_rankings,
+    method_used = method,
+    n_components = n_components,
+    weights_used = weighting_schemes[[method]],
+    quartiles = quartiles
+  ))
+}
+
+# Construct GVC Index
+gvc_index_results <- construct_gvc_index(pca_results, method = "variance_based")
+
+# Display top and bottom performers
+cat("\n=== GVC READINESS INDEX RESULTS
